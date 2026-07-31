@@ -13,7 +13,7 @@
     "test:frontend:watch": "vitest --config vitest.config.js"
   },
   "devDependencies": {
-    "jsdom": "^26.1.0",
+    "jsdom": "^30.0.0",
     "vitest": "^3.2.4"
   }
 }
