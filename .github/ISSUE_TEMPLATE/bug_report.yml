@@ -1,0 +1,66 @@
+name: Bug 报告
+description: 报告可复现的 StockAgents 问题
+title: "[Bug]: "
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: 请先移除日志、截图和配置中的密钥、Cookie 与个人数据。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 问题描述
+      description: 实际发生了什么？预期是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小复现步骤
+      placeholder: |
+        1. 启动……
+        2. 打开……
+        3. 点击……
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响区域
+      options:
+        - Login / Auth
+        - Agent Config / Teams
+        - Plaza
+        - Information Sources
+        - Trading Simulation
+        - Documentation / CI
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: 版本或 commit
+      placeholder: v0.x.y / commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境
+      description: 操作系统、Python、Node、浏览器与启动命令。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏后的日志或截图
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已确认内容中不包含密钥、Cookie 或个人数据。
+          required: true
+        - label: 这不是应通过私密渠道报告的安全漏洞。
+          required: true

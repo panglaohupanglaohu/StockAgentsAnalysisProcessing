@@ -1,0 +1,19 @@
+{
+  "name": "stockagents-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend contract tests for StockAgents",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "npm run test:frontend",
+    "test:frontend": "vitest run --config vitest.config.js",
+    "test:frontend:watch": "vitest --config vitest.config.js"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    env:
+      AG_ALLOW_DEFAULT_ADMIN: '0'
+      AG_STRICT_STARTUP: '0'
+      DEEPSEEK_API_KEY: test-key-not-real
+      OPENAI_API_KEY: test-key-not-real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install project
+        run: python -m pip install -e '.[dev]'
+      - name: Compile backend
+        run: python -m compileall -q src/backend
+      - name: Run backend tests
+        run: python -m pytest
+
+  frontend:
+    name: Frontend contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install frontend test dependencies
+        run: npm ci
+      - name: Run frontend tests
+        run: npm run test:frontend

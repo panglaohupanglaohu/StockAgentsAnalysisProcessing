@@ -1,0 +1,2966 @@
+# 研究分析 — researcher
+
+任务: LLM连通性测试任务
+步骤: research
+Agent: build_researcher
+
+---
+
+📋 任务: f168234c-5a9
+🤖 Agent: Researcher (researcher)
+📂 工作目录: /Users/panglaohu/Downloads/AgentsGroup2026
+🔧 执行方式: DeepSeek API (直连)
+⏱️ 超时: 1200s
+────────────────────────────────────────────────────────────
+📝 提示词:
+  你是 AgentsGroup2026 系统的 Researcher (researcher)。
+  请执行以下开发任务:
+  
+  你是技术研究员。请对以下任务进行技术调研:
+  
+  ## 任务
+  LLM连通性测试任务
+  测试 _check_task_runtime_ready 是否能读到 API key
+  
+  ## 📂 项目上下文 (系统自动预加载)
+  
+  ### 项目文件结构 (src/ 目录)
+  ```
+  src/frontend/Agent-digital-twin.html
+  src/frontend/agent-team-config.html
+  src/frontend/cost-dashboard.html
+  src/frontend/datacenter-ratchet-evolution.html
+  src/frontend/digital-twin-cli.html
+  src/frontend/extraction-pipeline.html
+  src/frontend/index.html
+  src/frontend/login.html
+  src/frontend/plaza.html
+  src/frontend/sandbox-twin.html
+  src/frontend/skill-extract.html
+  src/frontend/system-evolution.html
+  src/frontend/tasks.html
+  src/frontend/css/agent-team-config.css
+  src/frontend/css/base.css
+  src/frontend/css/components.css
+  src/frontend/css/cost-dashboard.css
+  src/frontend/css/openbridge-theme.css
+  src/frontend/css/sandbox-twin.css
+  src/frontend/css/skill-extract-timeline.css
+  src/frontend/css/skill-extract.css
+  src/frontend/css/tasks-ws.css
+  src/frontend/css/theme.css
+  src/frontend/css/topbar-ws.css
+  src/frontend/css/variables.css
+  src/frontend/css/ws-theme-bridge.css
+  src/frontend/js/ag-context.js
+  src/frontend/js/agent-detail.js
+  src/frontend/js/agent-team-config.js
+  src/frontend/js/api.js
+  src/frontend/js/cost-dashboard.js
+  src/frontend/js/digital-twin-cli-3d.js
+  src/frontend/js/digital-twin-cli.js
+  src/frontend/js/evidence-runs.js
+  src/frontend/js/extract-routing.js
+  src/frontend/js/global-nav.js
+  src/frontend/js/global-nav.js.bak
+  src/frontend/js/i18n.js
+  src/frontend/js/nav-sidebar.js
+  src/frontend/js/nav.js
+  src/frontend/js/plaza.js
+  src/frontend/js/sandbox-twin-3d.js
+  src/frontend/js/sandbox-twin.js
+  src/frontend/js/sessions-runtime.js
+  src/frontend/js/skill-extract-timeline.js
+  src/frontend/js/skill-extract.js
+  src/frontend/js/system-evolution.js
+  src/frontend/js/tasks-view.js
+  src/frontend/js/token-factory.js
+  src/frontend/js/tools-skills.js
+  src/frontend/js/utils.js
+  src/frontend/js/wizard.js
+  src/frontend/js/digital-twin/director.js
+  src/frontend/js/digital-twin/secs-core.js
+  src/frontend/js/digital-twin/v4-evolution.js
+  src/frontend/js/digital-twin/v4-scenario-evolution.js
+  src/frontend/js/digital-twin/v4-scenarios.js
+  src/frontend/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json
+  src/frontend/__tests__/ag-context.test.js
+  src/frontend/__tests__/agent-config.test.js
+  src/frontend/__tests__/agent-detail-digital-employee.test.js
+  src/frontend/__tests__/agent-detail-pagination.test.js
+  src/frontend/__tests__/agent-team-config-delete.test.js
+  src/frontend/__tests__/agent-team-config-pagination.test.js
+  src/frontend/__tests__/agent-team-config-state.test.js
+  src/frontend/__tests__/api.test.js
+  src/frontend/__tests__/close-form.test.js
+  src/frontend/__tests__/cost-dashboard.test.js
+  src/frontend/__tests__/csrf-pages.test.js
+  src/frontend/__tests__/digital-twin-cli-pagination.test.js
+  src/frontend/__tests__/digital-twin-move-state-machine.test.js
+  src/frontend/__tests__/digital-twin-move-vm.test.js
+  src/frontend/__tests__/digital-twin-ratchet.test.js
+  src/frontend/__tests__/digital-twin-state.test.js
+  src/frontend/__tests__/evidence-runs.test.js
+  src/frontend/__tests__/extract-routing.test.js
+  src/frontend/__tests__/frontend-big-change-smoke.test.js
+  src/frontend/__tests__/global-nav.test.js
+  src/frontend/__tests__/login-page-flow.test.js
+  src/frontend/__tests__/plaza-action-paths.test.js
+  src/frontend/__tests__/plaza-modal-input.test.js
+  src/frontend/__tests__/plaza-pagination.test.js
+  src/frontend/__tests__/plaza-runtime-helpers.test.js
+  src/frontend/__tests__/plaza-vitest-new.test.js
+  src/frontend/__tests__/scenario-cards.test.js
+  src/frontend/__tests__/skill-extract-action-paths.test.js
+  src/frontend/__tests__/skill-extract-modal-flow.test.js
+  src/frontend/__tests__/skill-extract-smoke.test.js
+  src/frontend/__tests__/skill-extract-verification.test.js
+  src/frontend/__tests__/skill-publish-gate.test.js
+  src/frontend/__tests__/system-evolution.test.js
+  src/frontend/__tests__/tasks-pagination.test.js
+  src/frontend/__tests__/team-unified.test.js
+  src/frontend/__tests__/toast-robustness.test.js
+  src/frontend/__tests__/tools-skills.test.js
+  src/frontend/__tests__/utils-surface.test.js
+  src/frontend/__tests__/utils.test.js
+  src/frontend/__tests__/wizard-pagination.test.js
+  src/backend/0tfuaiyp
+  src/backend/__init__.py
+  src/backend/agent_team_api.py
+  src/backend/ci_cost_gate.py
+  src/backend/config.py
+  src/backend/datacenter_api.py
+  src/backend/main.py
+  src/backend/main.py.bak
+  src/backend/server.log
+  src/backend/startup_check.py
+  src/backend/startup_validator.py
+  src/backend/token_factory.py
+  src/backend/tests/__init__.py
+  src/backend/tests/conftest.py
+  src/backend/tests/conftest.py.bak
+  src/backend/tests/test_ab_testing.py
+  src/backend/tests/test_agent_skill_binding.py
+  src/backend/tests/test_agent_toolbox.py
+  src/backend/tests/test_api_handler_integration.py
+  src/backend/tests/test_api_integration_extended.py
+  src/backend/tests/test_api_pagination.py
+  src/backend/tests/test_api_rate_limit.py
+  src/backend/tests/test_auth_csrf.py
+  src/backend/tests/test_channel_event_bridge.py
+  src/backend/tests/test_chaos_stability.py
+  src/backend/tests/test_core_api_smoke.py
+  src/backend/tests/test_cost_gate.py
+  src/backend/tests/test_cost_monitor.py
+  src/backend/tests/test_datacenter_api.py
+  src/backend/tests/test_evidence_store.py
+  src/backend/tests/test_evolution_evidence_detail.py
+  src/backend/tests/test_evolution_race.py
+  src/backend/tests/test_evolution_race.py.bak
+  src/backend/tests/test_execution_evidence.py
+  src/backend/tests/test_fingerprint.py
+  src/backend/tests/test_fingerprint.py.bak
+  src/backend/tests/test_frontend_auth_contract.py
+  src/backend/tests/test_gate_evaluator.py
+  src/backend/tests/test_gate_evaluator.py.bak
+  src/backend/tests/test_main_health.py
+  src/backend/tests/test_merge_plugin.py
+  src/backend/tests/test_merge_plugin.py.bak
+  src/backend/tests/test_models.py
+  src/backend/tests/test_models.py.bak
+  src/backend/tests/test_network_egress.py
+  src/backend/tests/test_network_egress.py.bak
+  src/backend/tests/test_operation_store.py
+  src/backend/tests/test_permissions_and_secrets.py
+  src/backend/tests/test_plan_loop_runtime.py
+  src/backend/tests/test_plaza_consensus.py
+  src/backend/tests/test_plaza_dispatch.py
+  src/backend/tests/test_plaza_evolution_bridge.py
+  ... (共 1652 个 src/ 文件)
+  
+  ```
+  
+  ### 文件: `src/frontend/js/api.js`
+  ```js
+  /**
+   * AgentsGroup2026 — Shared API Client
+   * Unified fetch wrapper with error handling, offline detection,
+   * and pagination support. Load before page-specific scripts.
+   * Exposes window.api with .request(), .get(), .post(), .put(), .del(), .list()
+   */
+  (function () {
+    'use strict';
+  
+    var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+    var api = window.api = {};
+  
+    // Last error for debugging
+    api._lastError = null;
+  
+    // Offline state (consumed by page-specific UI)
+    api._offline = false;
+    api._onOffline = null;  // callback when offline status changes
+    api._onError = null;    // callback(msg) for 4xx/5xx
+  
+    // CSRF token (fetched from endpoint and cached)
+    api._csrfToken = null;
+    api._csrfPromise = null;
+    api._csrfHeaderName = 'X-CSRF-Token';
+    api._requestIdHeaderName = 'X-Request-ID';
+    api._lastRequestId = '';
+  
+    api.setCsrfToken = function (token) {
+      api._csrfToken = token || '';
+      api._csrfPromise = api._csrfToken ? Promise.resolve(api._csrfToken) : null;
+      return api._csrfToken;
+    };
+  
+    api.clearCsrfToken = function () {
+      api._csrfToken = null;
+      api._csrfPromise = null;
+    };
+  
+    api.getLastRequestId = function () {
+      return api._lastRequestId || '';
+    };
+  
+    api._authRedirecting = false;
+  
+    api.decorateErrorMessage = function (message, requestId) {
+      var text = String(message || '');
+      var id = requestId || api.getLastRequestId() || (api._lastError && api._lastError.request_id) || '';
+      if (!id || text.indexOf('请求ID:') !== -1) return text;
+      return text + ' · 请求ID: ' + id;
+    };
+  
+    function withCredentials(opts) {
+      opts = opts || {};
+      if (!opts.credentials) opts.credentials = 'same-origin';
+      return opts;
+    }
+  
+    function isStateChanging(method) {
+      method = (method || 'GET').toUpperCase();
+      return method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH';
+    }
+  
+    function getRequestUrl(input) {
+      if (typeof input === 'string') return input;
+      if (input && typeof input.url === 'string') return input.url;
+      return '';
+    }
+  
+    function _resolveTarget(input) {
+      var url = getRequestUrl(input);
+      if (!url) return { csrfAware: false, sameOrigin: false };
+      try {
+        var resolved = new URL(url, window.location.origin);
+        var current = new URL(window.location.origin);
+        var sameOrigin = resolved.origin === current.origin;
+        var csrfAware = sameOrigin || (
+          resolved.protocol === current.protocol &&
+          resolved.hostname === current.hostname
+        );
+        return { csrfAware: csrfAware, sameOrigin: sameOrigin };
+      } catch (e) {
+        return { csrfAware: false, sameOrigin: false };
+      }
+    }
+  
+    function hasHeader(headers, name) {
+      if (!headers || typeof headers.has !== 'function') return false;
+      return headers.has(name) || headers.has(name.toLowerCase());
+    }
+  
+    function isAuthEndpointPath(pathname) {
+      return pathname.indexOf('/api/v1/auth/') === 0;
+    }
+  
+    function redirectToLogin() {
+      if (api._authRedirecting) return;
+      if (window.location.pathname === '/login.html') return;
+      api._authRedirecting = true;
+      var next = window.location.pathname + window.location.search + window.location.hash;
+      window.location.href = '/login.html?next=' + encodeURIComponent(next);
+    }
+  
+    function maybeHandleUnauthorizedResponse(response, input) {
+      if (!response || response.status !== 401) return;
+      var url = getRequestUrl(input);
+      if (!url) return;
+      try {
+        var resolved = new URL(url, window.location.origin);
+        if (resolved.pathname.indexOf('/api/v1/') !== 0) return;
+        if (isAuthEndpointPath(resolved.pathname)) return;
+        redirectToLogin();
+      } catch (e) {
+        /* ignore malformed URLs */
+      }
+    }
+  
+    function nextRequestId() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+      }
+      return 'ag-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    }
+  
+    function getRequestIdFromPrepared(input, opts) {
+      if (typeof Request !== 'undefined' && input instanceof Request) {
+        return input.headers.get(api._requestIdHeaderName) || '';
+      }
+      if (opts && opts.headers && typeof opts.headers.get === 'function') {
+        return opts.headers.get(api._requestIdHeaderName) || '';
+      }
+      return '';
+    }
+  
+    function isCsrfFailurePayload(payload) {
+      if (!payload) return false;
+      var detail = payload.detail || payload.message || '';
+      return typeof detail === 'string' && /csrf token invalid or expired/i.test(detail);
+    }
+  
+    async function isCsrfFailureResponse(response) {
+      if (!response || response.status !== 403 || typeof response.clone !== 'function') return false;
+      try {
+        var payload = await response.clone().json();
+        return isCsrfFailurePayload(payload);
+      } catch (e) {
+        try {
+          var text = await response.clone().text();
+          return /csrf token invalid or expired/i.test(text || '');
+        } catch (ignored) {
+          return false;
+        }
+      }
+    }
+  
+    async function prepareRequest(input, opts) {
+      var target = _resolveTarget(input);
+      if (!target.csrfAware) {
+        return [input, opts];
+      }
+  
+      var requestLike = (typeof Request !== 'undefined') && input instanceof Request;
+      var method = (opts && opts.method) || (requestLike ? input.method : 'GET');
+      var headers = new Headers((opts && opts.headers) || (requestLike ? input.headers : undefined) || undefined);
+  
+      if (isStateChanging(method)) {
+        await api.fetchCsrfToken();
+        if (api._csrfToken && !hasHeader(headers, api._csrfHeaderName)) {
+          headers.set(api._csrfHeaderName, api._csrfToken);
+        }
+      }
+      if (!hasHeader(headers, api._requestIdHeaderName)) {
+        headers.set(api._requestIdHeaderName, nextRequestId());
+      }
+  
+      var finalOpts = {};
+      if (opts) {
+        Object.keys(opts).forEach(function (key) {
+          if (key !== 'headers') finalOpts[key] = opts[key];
+        });
+      }
+      finalOpts.headers = headers;
+      if (!finalOpts.credentials) {
+        finalOpts.credentials = (requestLike && input.credentials) || (target.sameOrigin ? 'same-origin' : 'include');
+      }
+  
+      if (requestLike) {
+        return [new Request(input, finalOpts), undefined];
+      }
+      return [input, finalOpts];
+    }
+  
+    async function fetchWithCsrfRetry(input, opts) {
+      var retryInput = (typeof Request !== 'undefined' && input instanceof Request) ? input.clone() : input;
+      var prepared = await prepareRequest(input, opts);
+      var requestId = getRequestIdFromPrepared(prepared[0], prepared[1]);
+      var response = await nativeFetch(prepared[0], prepared[1]);
+      maybeHandleUnauthorizedResponse(response, prepared[0]);
+      if (!(await isCsrfFailureResponse(response))) {
+        return { response: response, requestId: requestId };
+      }
+  
+      api.clearCsrfToken();
+      await api.fetchCsrfToken();
+      var retryPrepared = await prepareRequest(retryInput, opts);
+      var retryRequestId = getRequestIdFromPrepared(retryPrepared[0], retryPrepared[1]) || requestId;
+      var retryResponse = await nativeFetch(retryPrepared[0], retryPrepared[1]);
+      maybeHandleUnauthorizedResponse(retryResponse, retryPrepared[0]);
+      return { response: retryResponse, requestId: retryRequestId };
+    }
+  
+    /**
+     * Fetch a fresh CSRF token from the server and cache it.
+     */
+    api.fetchCsrfToken = function () {
+      if (api._csrfToken) return Promise.resolve(api._csrfToken);
+      if (api._csrfPromise) return api._csrfPromise;
+      api._csrfPromise = nativeFetch('/api/v1/auth/csrf-token', withCredentials())
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          return api.setCsrfToken(d.csrf_token || '');
+        })
+        .catch(function () {
+          api._csrfPromise = null;
+          return '';
+        });
+      return api._csrfPromise;
+    };
+    /**
+     * Main request function.
+     * @param {string} url  - Full or relative URL
+     * @param {object} [opts] - fetch options (method, headers, body)
+     * @returns {object|null} - Parsed JSON response, or null on error
+     */
+    api.request = async function (url, opts) {
+      try {
+        var result = await fetchWithCsrfRetry(url, opts);
+        var outgoingRequestId = result.requestId;
+        var r = result.response;
+        api._lastRequestId = r.headers && r.headers.get ? (r.headers.get(api._requestIdHeaderName) || outgoingRequestId) : outgoingRequestId;
+        if (api._offline) {
+          api._offline = false;
+          if (api._onOffline) api._onOffline(false);
+        }
+        if (!r.ok) {
+          var msg = '';
+          try { var d = await r.json(); msg = d.detail || d.message || ''; } catch (e) { /* ignore parse errors */ }
+          console.warn('API ' + r.status + ': ' + url, msg);
+          api._lastError = { status: r.status, message: msg, url: url, request_id: api._lastRequestId || outgoingRequestId };
+          if (api._onError) api._onError(msg || 'HTTP ' + r.status);
+          api._lastViewError = msg || 'HTTP ' + r.status;
+          return null;
+        }
+        api._lastError = null;
+        return await r.json();
+      } catch (e) {
+        console.error('API error: ' + url, e);
+        api._lastRequestId = api._lastRequestId || outgoingRequestId || '';
+        if (e.name === 'TypeError' || (e.message && e.message.indexOf('fetch') !== -1)) {
+          api._offline = true;
+          if (api._onOffline) api._onOffline(true);
+        }
+        api._lastError = { status: 0, message: e.message, url: url, network: true, request_id: api._lastRequestId || outgoingRequestId || '' };
+        if (api._onError) api._onError(e.message);
+        api._lastViewError = e.message;
+        return null;
+      }
+    };
+  
+    /**
+     * Shorthand for GET requests
+     */
+    api.get = function (url) {
+      return api.request(url);
+    };
+  
+    /**
+     * Shorthand for POST/PUT/DELETE with JSON body
+     * Automatically includes CSRF token for state-changing requests.
+     */
+    api.send = async function (url, method, body) {
+      var opts = {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+      };
+      if (body !== undefined) opts.body = JSON.stringify(body);
+      return api.request(url, opts);
+    };
+  
+    /**
+     * POST shorthand
+     */
+    api.post = function (url, body) {
+      return api.send(url, 'POST', body);
+    };
+  
+    /**
+     * PUT shorthand
+     */
+    api.put = function (url, body) {
+      return api.send(url, 'PUT', body);
+    };
+  
+    /**
+     * DELETE shorthand
+     */
+    api.del = function (url) {
+      var opts = { method: 'DELETE' };
+      if (api._csrfToken) {
+        opts.headers = opts.headers || {};
+        opts.headers[api._csrfHeaderName] = api._csrfToken;
+      }
+      return api.request(url, opts);
+    };
+  
+    api.logout = async function () {
+      var result = await api.post('/api/v1/auth/logout');
+      api.clearCsrfToken();
+      return result;
+    };
+  
+    /**
+     * Pagination wrapper — adds limit/offset/query params to a list GET
+     * Returns { items, total, limit, offset, has_more }
+     */
+    api.list = function (baseUrl, limit, offset) {
+      limit = limit || 50;
+      offset = offset || 0;
+      var sep = baseUrl.indexOf('?') >= 0 ? '&' : '?';
+      return api.request(baseUrl + sep + 'limit=' + limit + '&offset=' + offset);
+    };
+  
+    // Global CSRF-aware fetch wrapper for direct fetch() calls in other scripts.
+    // Usage: replace fetch(url, opts) with window._agFetch(url, opts) for state-changing requests.
+    window._agFetch = async function (url, opts) {
+      var result = await fetchWithCsrfRetry(url, opts);
+      return result.response;
+    };
+  
+    if (nativeFetch) {
+      window.fetch = async function (input, opts) {
+        var prepared = await prepareRequest(input, opts);
+        return nativeFetch(prepared[0], prepared[1]);
+      };
+    }
+  
+    // Pre-fetch at load time
+    api.fetchCsrfToken();
+  })();
+  
+  ```
+  
+  ### 文件: `src/frontend/__tests__/api.test.js`
+  ```js
+  /**
+   * Tests for api.js — fetch wrapper with CSRF, offline detection, pagination
+   * Uses vi.fn() to mock fetch and test request/response/error paths
+   */
+  import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+  
+  // We test the api.js logic by replicating its IIFE behavior
+  // api.js exposes window.api with .request(), .get(), .post(), .put(), .del(), .list()
+  
+  describe('api.js - request', () => {
+    let api;
+  
+    beforeEach(() => {
+      // Simulate api.js IIFE
+      globalThis.fetch = vi.fn();
+      globalThis.window = globalThis;
+      globalThis.location = { origin: 'http://127.0.0.1:5173', hostname: '127.0.0.1', protocol: 'http:' };
+  
+      // Re-create api like api.js does
+      api = {
+        _lastError: null,
+        _offline: false,
+        _onOffline: null,
+        _onError: null,
+        _csrfToken: null,
+        _csrfPromise: null,
+        _csrfHeaderName: 'X-CSRF-Token',
+        _authRedirecting: false,
+  
+        setCsrfToken(token) {
+          this._csrfToken = token || '';
+          this._csrfPromise = this._csrfToken ? Promise.resolve(this._csrfToken) : null;
+          return this._csrfToken;
+        },
+  
+        clearCsrfToken() {
+          this._csrfToken = null;
+          this._csrfPromise = null;
+        },
+  
+        withCredentials(opts) {
+          opts = opts || {};
+          if (!opts.credentials) opts.credentials = 'same-origin';
+          return opts;
+        },
+  
+        fetchCsrfToken() {
+          if (this._csrfToken) return Promise.resolve(this._csrfToken);
+          if (this._csrfPromise) return this._csrfPromise;
+          this._csrfPromise = fetch('/api/v1/auth/csrf-token', this.withCredentials())
+            .then(r => r.json())
+            .then(d => this.setCsrfToken(d.csrf_token || ''))
+            .catch(() => { this._csrfPromise = null; return ''; });
+          return this._csrfPromise;
+        },
+  
+        _resolveTarget(url) {
+          if (!url) return { csrfAware: false, sameOrigin: false };
+          const resolved = new URL(url, globalThis.location.origin);
+          const current = new URL(globalThis.location.origin);
+          const sameOrigin = resolved.origin === current.origin;
+          const csrfAware = sameOrigin || (
+            resolved.protocol === current.protocol &&
+            resolved.hostname === current.hostname
+          );
+          return { csrfAware, sameOrigin };
+        },
+  
+        redirectToLogin() {
+          if (this._authRedirecting) return;
+          if (globalThis.location.pathname === '/login.html') return;
+          this._authRedirecting = true;
+          const next = (globalThis.location.pathname || '') + (globalThis.location.search || '') + (globalThis.location.hash || '');
+          globalThis.location.href = '/login.html?next=' + encodeURIComponent(next);
+        },
+  
+        maybeHandleUnauthorizedResponse(response, url) {
+          if (!response || response.status !== 401) return;
+          const resolved = new URL(url, globalThis.location.origin);
+          if (!resolved.pathname.startsWith('/api/v1/')) return;
+          if (resolved.pathname.startsWith('/api/v1/auth/')) return;
+          this.redirectToLogin();
+        },
+  
+        isCsrfFailurePayload(payload) {
+          if (!payload) return false;
+          const detail = payload.detail || payload.message || '';
+          return typeof detail === 'string' && /csrf token invalid or expired/i.test(detail);
+        },
+  
+        async isCsrfFailureResponse(response) {
+          if (!response || response.status !== 403 || typeof response.clone !== 'function') return false;
+          try {
+            const payload = await response.clone().json();
+            return this.isCsrfFailurePayload(payload);
+          } catch (e) {
+            return false;
+          }
+        },
+  
+        async request(url, opts) {
+          const method = (opts && opts.method) ? opts.method.toUpperCase() : 'GET';
+          const target = this._resolveTarget(url);
+          try {
+            const sendOnce = async () => {
+              let nextOpts = opts ? { ...opts, headers: { ...(opts.headers || {}) } } : undefined;
+              if (target.csrfAware && (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH')) {
+                await this.fetchCsrfToken();
+                if (this._csrfToken) {
+                  nextOpts = nextOpts || {};
+                  nextOpts.headers = nextOpts.headers || {};
+                  nextOpts.headers[this._csrfHeaderName] = this._csrfToken;
+                }
+              }
+              const finalOpts = this.withCredentials(nextOpts);
+              if (target.csrfAware && !finalOpts.credentials) {
+                finalOpts.credentials = target.sameOrigin ? 'same-origin' : 'include';
+              } else if (target.csrfAware && finalOpts.credentials === 'same-origin' && !target.sameOrigin) {
+                finalOpts.credentials = 'include';
+              }
+              return fetch(url, finalOpts);
+            };
+  
+            let r = await sendOnce();
+            this.maybeHandleUnauthorizedResponse(r, url);
+            if (await this.isCsrfFailureResponse(r)) {
+              this.clearCsrfToken();
+              r = await sendOnce();
+              this.maybeHandleUnauthorizedResponse(r, url);
+            }
+            if (this._offline) {
+              this._offline = false;
+              if (this._onOffline) this._onOffline(false);
+            }
+            if (!r.ok) {
+              this._lastError = { status: r.status, message: '', url };
+              if (this._onError) this._onError('HTTP ' + r.status);
+              return null;
+            }
+            this._lastError = null;
+            return await r.json();
+          } catch (e) {
+            if (e.name === 'TypeError' || (e.message && e.message.indexOf('fetch') !== -1)) {
+              this._offline = true;
+              if (this._onOffline) this._onOffline(true);
+            }
+            this._lastError = { status: 0, message: e.message, url, network: true };
+            if (this._onError) this._onError(e.message);
+            return null;
+          }
+        },
+  
+        async send(url, method, body) {
+          await this.fetchCsrfToken();
+          const opts = { method, headers: { 'Content-Type': 'application/json' } };
+          if (this._csrfToken) opts.headers[this._csrfHeaderName] = this._csrfToken;
+          if (body !== undefined) opts.body = JSON.stringify(body);
+          return this.request(url, opts);
+        },
+  
+        get(url) { return this.request(url); },
+        post(url, body) { return this.send(url, 'POST', body); },
+        put(url, body) { return this.send(url, 'PUT', body); },
+        del(url) { return this.send(url, 'DELETE'); },
+        async logout() {
+          const result = await this.post('/api/v1/auth/logout');
+          this.clearCsrfToken();
+          return result;
+        },
+  
+        list(baseUrl, limit, offset) {
+          limit = limit || 50;
+          offset = offset || 0;
+          const sep = baseUrl.indexOf('?') >= 0 ? '&' : '?';
+          return this.request(baseUrl + sep + 'limit=' + limit + '&offset=' + offset);
+        },
+      };
+    });
+  
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+  
+    describe('GET requests', () => {
+      it('returns parsed JSON on success', async () => {
+        vi.mocked(fetch).mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ teams: ['a', 'b'] }),
+        });
+  
+        const result = await api.get('/api/v1/teams');
+        expect(result).toEqual({ teams: ['a', 'b'] });
+        expect(fetch).toHaveBeenCalledWith('/api/v1/teams', { credentials: 'same-origin' });
+      });
+  
+      it('returns null on 404', async () => {
+        vi.mocked(fetch).mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          json: async () => ({ detail: 'Not found' }),
+        });
+  
+        const onError = vi.fn();
+        api._onError = onError;
+  
+        const result = await api.get('/api/v1/teams');
+        expect(result).toBeNull();
+        expect(onError).toHaveBeenCalledWith('HTTP 404');
+      });
+  
+      it('redirects to login on protected API 401', async () => {
+        globalThis.location.pathname = '/system-evolution.html';
+        globalThis.location.search = '?panel=items';
+        globalThis.location.hash = '#trail';
+        vi.mocked(fetch).mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          json: async () => ({ detail: '认证已失效，请重新登录' }),
+        });
+  
+        const result = await api.get('/api/v1/agent-config/plaza');
+        expect(result).toBeNull();
+        expect(globalThis.location.href).toBe('/login.html?next=' + encodeURIComponent('/system-evolution.html?panel=items#trail'));
+      });
+  
+      it('returns null and triggers offline on network error', async () => {
+        vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  
+        const onOffline = vi.fn();
+        api._onOffline = onOffline;
+  
+        const result = await api.get('/api/v1/teams');
+        expect(result).toBeNull();
+        expect(api._offline).toBe(true);
+        expect(onOffline).toHaveBeenCalledWith(true);
+      });
+    });
+  
+    describe('POST requests', () => {
+      it('includes CSRF token in headers', async () => {
+        // Mock CSRF endpoint
+        vi.mocked(fetch)
+          .mockResolvedValueOnce({ // CSRF token fetch
+            ok: true,
+            json: async () => ({ csrf_token: 'test-csrf-token-123' }),
+          })
+          .mockResolvedValueOnce({ // actual POST
+            ok: true,
+            json: async () => ({ success: true }),
+          });
+  
+        const result = await api.post('/api/v1/teams', { name: 'test' });
+        expect(result).toEqual({ success: true });
+  
+        // Check CSRF was included
+        const postCall = vi.mocked(fetch).mock.calls[1];
+        expect(postCall[1].method).toBe('POST');
+        expect(postCall[1].headers['X-CSRF-Token']).toBe('test-csrf-token-123');
+      });
+  
+      it('includes CSRF token and credentials for same-host absolute backend URLs', async () => {
+        vi.mocked(fetch)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ csrf_token: 'test-csrf-token-123' }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ success: true }),
+          });
+  
+        const result = await api.post('http://127.0.0.1:8080/api/v1/datacenter/loop/tick');
+        expect(result).toEqual({ success: true });
+  
+        const postCall = vi.mocked(fetch).mock.calls[1];
+        expect(postCall[0]).toBe('http://127.0.0.1:8080/api/v1/datacenter/loop/tick');
+        expect(postCall[1].headers['X-CSRF-Token']).toBe('test-csrf-token-123');
+        expect(postCall[1].credentials).toBe('include');
+      });
+  
+      it('refreshes CSRF token and retries once when it has expired', async () => {
+        vi.mocked(fetch)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ csrf_token: 'stale-token' }),
+          })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 403,
+            clone() { return this; },
+            json: async () => ({ detail: 'CSRF token invalid or expired, please refresh the page' }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ csrf_token: 'fresh-token' }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ success: true }),
+          });
+  
+        const result = await api.post('/api/v1/agent-config/plaza/demo/discussions', { topic: 'smoke' });
+        expect(result).toEqual({ success: true });
+        expect(fetch).toHaveBeenCalledTimes(4);
+        expect(vi.mocked(fetch).mock.calls[1][1].headers['X-CSRF-Token']).toBe('stale-token');
+        expect(vi.mocked(fetch).mock.calls[3][1].headers['X-CSRF-Token']).toBe('fresh-token');
+      });
+  
+      it('does NOT inject CSRF for GET requests', async () => {
+        vi.mocked(fetch).mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ data: 'ok' }),
+        });
+  
+        // First call would be CSRF token fetch if triggered, but GET should skip it
+        await api.get('/api/v1/teams');
+        expect(fetch).toHaveBeenCalledTimes(1); // Only GET, no CSRF fetch
+      });
+  
+      it('allows pages to prime CSRF after login/register', async () => {
+        api.setCsrfToken('preset-token');
+  
+        expect(api._csrfToken).toBe('preset-token');
+      });
+    });
+  
+    describe('pagination', () => {
+      it('appends limit and offset to URL', async () => {
+        vi.mocked(fetch).mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ items: [], total: 0 }),
+        });
+  
+        await api.list('/api/v1/teams', 25, 10);
+        expect(fetch).toHaveBeenCalledWith('/api/v1/teams?limit=25&offset=10', { credentials: 'same-origin' });
+      });
+  
+      it('uses ? or & correctly', async () => {
+        vi.mocked(fetch).mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ items: [], total: 0 }),
+        });
+  
+        await api.list('/api/v1/teams?status=active', 50, 0);
+        expect(fetch).toHaveBeenCalledWith('/api/v1/teams?status=active&limit=50&offset=0', { credentials: 'same-origin' });
+      });
+    });
+  
+    describe('error recovery', () => {
+      it('clears offline flag on successful request', async () => {
+        api._offline = true;
+  
+        vi.mocked(fetch).mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true }),
+        });
+  
+        await api.get('/api/v1/health');
+        expect(api._offline).toBe(false);
+      });
+  
+      it('clears the cached csrf token on logout', async () => {
+        api.setCsrfToken('to-clear');
+        vi.mocked(fetch)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ ok: true }),
+          });
+  
+        await api.logout();
+        expect(api._csrfToken).toBeNull();
+      });
+    });
+  });
+  
+  ```
+  
+  ### 文件: `src/backend/tests/test_api_handler_integration.py`
+  ```py
+  # -*- coding: utf-8 -*-
+  """HTTP-level regressions for selected agent team and digital twin handlers."""
+  
+  from __future__ import annotations
+  
+  import time
+  
+  import pytest
+  from fastapi.testclient import TestClient
+  
+  from agents import api as api_module
+  from channels.marine_base import get_default_registry
+  import main
+  from main import app
+  
+  
+  @pytest.fixture(scope="module")
+  def started_client():
+      registry = get_default_registry()
+      previous_rate_limit_login = dict(main._RATE_LIMIT_LOGIN)
+      previous_rate_limit_ip = dict(main._RATE_LIMIT_IP)
+      registry._channels.clear()
+      main._RATE_LIMIT_LOGIN.clear()
+      main._RATE_LIMIT_IP.clear()
+      with TestClient(app) as client:
+          yield client
+      registry._channels.clear()
+      main._RATE_LIMIT_LOGIN.clear()
+      main._RATE_LIMIT_LOGIN.update(previous_rate_limit_login)
+      main._RATE_LIMIT_IP.clear()
+      main._RATE_LIMIT_IP.update(previous_rate_limit_ip)
+  
+  
+  def _register_and_get_csrf(client: TestClient, username_prefix: str) -> str:
+      username = f"{username_prefix}_{int(time.time() * 1000)}"
+      resp = client.post(
+          "/api/v1/auth/register",
+          json={"username": username, "password": "password123"},
+      )
+      assert resp.status_code == 200
+      csrf_resp = client.get("/api/v1/auth/csrf-token")
+      assert csrf_resp.status_code == 200
+      return csrf_resp.json()["csrf_token"]
+  
+  
+  class TestDigitalTwinHandlerIntegration:
+      def test_digital_twin_move_validates_request_body(self, started_client):
+          token = _register_and_get_csrf(started_client, "dtmove")
+  
+          resp = started_client.post(
+              "/api/v1/agent-config/digital-twin/move",
+              json={"agent_id": "agent-1"},
+              headers={"x-csrf-token": token},
+          )
+  
+          assert resp.status_code == 422
+  
+      def test_digital_twin_interact_accepts_from_alias(self, started_client, monkeypatch):
+          monkeypatch.setattr(
+              api_module,
+              "_dt_state",
+              {"rooms": [], "positions": {}, "interactions": []},
+          )
+          token = _register_and_get_csrf(started_client, "dtinteract")
+  
+          resp = started_client.post(
+              "/api/v1/agent-config/digital-twin/interact",
+              json={
+                  "from": "planner",
+                  "to": "builder",
+                  "type": "handoff",
+                  "content": "ship it",
+              },
+              headers={"x-csrf-token": token},
+          )
+  
+          assert resp.status_code == 200
+          payload = resp.json()
+          assert payload["from"] == "planner"
+          assert payload["to"] == "builder"
+          assert payload["content"] == "ship it"
+  
+  
+  class TestAgentTeamEvolutionHandlerIntegration:
+      def test_auto_triage_validates_top_n_bounds(self, started_client):
+          token = _register_and_get_csrf(started_client, "autotriage")
+  
+          resp = started_client.post(
+              "/api/v1/agent-teams/evolution/auto-triage",
+              json={"team_id": "build_system", "top_n": 11},
+              headers={"x-csrf-token": token},
+          )
+  
+          assert resp.status_code == 422
+  
+      def test_dataset_generate_validates_count_bounds(self, started_client):
+          token = _register_and_get_csrf(started_client, "datasetgen")
+  
+          resp = started_client.post(
+              "/api/v1/agent-teams/evolution/dataset/generate",
+              json={"skill_id": "skill-a", "team_id": "build_system", "count": 31},
+              headers={"x-csrf-token": token},
+          )
+  
+          assert resp.status_code == 422
+  
+  ```
+  
+  ### 文件: `src/backend/tests/test_api_pagination.py`
+  ```py
+  # -*- coding: utf-8 -*-
+  """Pagination regressions for agent-config list endpoints."""
+  
+  from __future__ import annotations
+  
+  from pathlib import Path
+  
+  import pytest
+  
+  from agents import api as api_module
+  from agents.models import AgentProfile, ModelConfig
+  from agents.skill_library import init_skill_library
+  from agents.skill_registry import SkillRegistry
+  from agents.task_engine import AgentTask, TaskEngine
+  from agents.task_store import TaskStore
+  from agents.team_manager import TeamManager
+  from agents.team_store import TeamStore
+  from agents.tool_registry import ToolRegistry
+  
+  
+  @pytest.fixture
+  def paginated_api_state(monkeypatch, tmp_path):
+      store = TeamStore(path=tmp_path / "teams.json")
+      team_manager = TeamManager(store=store)
+  
+      tool_registry = ToolRegistry()
+      tool_registry.load_defaults()
+  
+      skill_registry = SkillRegistry()
+      skill_registry.load_defaults()
+      init_skill_library(team_manager=team_manager, skill_registry=skill_registry)
+  
+      monkeypatch.setattr(api_module, "_team_manager", team_manager)
+      monkeypatch.setattr(api_module, "_tool_registry", tool_registry)
+      monkeypatch.setattr(api_module, "_skill_registry", skill_registry)
+      monkeypatch.setattr(api_module, "_sessions", {})
+      monkeypatch.setattr(api_module, "_delegated_tasks", [])
+  
+      task_engine = TaskEngine(store=TaskStore(base_dir=Path(tmp_path) / "tasks"))
+      monkeypatch.setattr(api_module, "get_task_engine", lambda: task_engine)
+  
+      team = team_manager.create_team(name="分页测试团队", team_id="team-page")
+      for index in range(5):
+          team.add_agent(
+              AgentProfile(
+                  agent_id=f"agent-{index}",
+                  name=f"Agent {index}",
+                  role="developer",
+              )
+          )
+      team.add_model(
+          ModelConfig(
+              model_id="model-a",
+              provider="openai",
+              name="gpt-test",
+              max_tokens=4096,
+              temperature=0.2,
+          )
+      )
+      team.add_model(
+          ModelConfig(
+              model_id="model-b",
+              provider="deepseek",
+              name="deepseek-chat",
+              max_tokens=8192,
+              temperature=0.7,
+          )
+      )
+      for tool in tool_registry.list_all()[:5]:
+          team.add_tool(tool)
+      for skill in skill_registry.list_all()[:4]:
+          team.add_skill(skill)
+      team_manager._persist()
+  
+      for index in range(4):
+          task = AgentTask(
+              task_id=f"task-{index}",
+              agent_id="agent-0",
+              team_id=team.team_id,
+              title=f"Task {index}",
+              description="pagination test",
+              priority=2,
+          )
+          task_engine._tasks[task.task_id] = task
+          task_engine._store.save_task(task)
+  
+      api_module._sessions.update(
+          {
+              f"session-{index}": {
+                  "session_id": f"session-{index}",
+                  "agent_id": "agent-0",
+                  "team_id": team.team_id,
+              }
+              for index in range(4)
+          }
+      )
+      api_module._delegated_tasks.extend(
+          {
+              "task_id": f"delegation-{index}",
+              "team_id": team.team_id,
+              "status": "queued",
+              "priority": 2,
+          }
+          for index in range(4)
+      )
+  
+      return team_manager, team, task_engine
+  
+  
+  class TestApiPagination:
+      def test_list_all_tools_supports_offset_without_explicit_limit(self, paginated_api_state):
+          payload = api_module.list_all_tools(limit=0, offset=1)
+  
+          assert payload["offset"] == 1
+          assert payload["limit"] == 50
+          assert payload["total"] >= 2
+          assert len(payload["items"]) >= 1
+  
+      def test_list_team_models_returns_paginated_envelope(self, paginated_api_state):
+          _, team, _ = paginated_api_state
+  
+          payload = api_module.list_models(team.team_id, limit=1, offset=1)
+  
+          assert payload["total"] == 2
+          assert payload["limit"] == 1
+          assert payload["offset"] == 1
+          assert len(payload["items"]) == 1
+  
+      def test_list_team_agents_returns_paginated_envelope(self, paginated_api_state):
+          _, team, _ = paginated_api_state
+  
+          payload = api_module.list_agents(team.team_id, limit=2, offset=2)
+  
+          assert payload["total"] == 5
+          assert payload["limit"] == 2
+          assert payload["offset"] == 2
+          assert len(payload["items"]) == 2
+  
+      def test_list_agent_sessions_returns_paginated_envelope(self, paginated_api_state):
+          _, team, _ = paginated_api_state
+  
+          payload = api_module.list_agent_sessions(team.team_id, "agent-0", limit=2, offset=1)
+  
+          assert payload["total"] == 4
+          assert payload["limit"] == 2
+          assert payload["offset"] == 1
+          assert len(payload["items"]) == 2
+  
+      def test_list_team_tasks_returns_paginated_envelope(self, paginated_api_state):
+          _, team, _ = paginated_api_state
+  
+          payload = api_module.list_team_tasks(team.team_id, limit=2, offset=1)
+  
+          assert payload["total"] == 4
+          assert payload["limit"] == 2
+          assert payload["offset"] == 1
+          assert len(payload["items"]) == 2
+  
+      def test_list_team_delegations_returns_paginated_envelope(self, paginated_api_state):
+          _, team, _ = paginated_api_state
+  
+          payload = api_module.list_team_delegations(team.team_id, limit=2, offset=1)
+  
+          assert payload["total"] == 4
+          assert payload["limit"] == 2
+          assert payload["offset"] == 1
+          assert len(payload["items"]) == 2
+  
+  ```
+  
+  ### 文件: `src/backend/tests/test_api_rate_limit.py`
+  ```py
+  # -*- coding: utf-8 -*-
+  """Regression tests for generic API rate limiting buckets."""
+  
+  from __future__ import annotations
+  
+  import sys
+  import uuid
+  from pathlib import Path
+  
+  import pytest
+  from fastapi.testclient import TestClient
+  
+  BACKEND_DIR = Path(__file__).resolve().parents[3] / "src" / "backend"
+  if str(BACKEND_DIR) not in sys.path:
+      sys.path.insert(0, str(BACKEND_DIR))
+  
+  import main  # noqa: E402
+  from datacenter_api import _service  # noqa: E402
+  
+  
+  @pytest.fixture(scope="module")
+  def client():
+      with TestClient(main.app) as test_client:
+          yield test_client
+  
+  
+  @pytest.fixture(autouse=True)
+  def isolate_rate_limits(monkeypatch):
+      monkeypatch.setattr(main, "_RATE_LIMIT_API", {})
+      monkeypatch.setattr(main, "_RATE_LIMIT_SENSITIVE", {})
+      monkeypatch.setattr(main, "_RATE_LIMIT_LOGIN", {})
+      monkeypatch.setattr(main, "_RATE_LIMIT_IP", {})
+      _service.reset()
+  
+  
+  def _csrf_headers(client: TestClient) -> dict[str, str]:
+      token = client.get("/api/v1/auth/csrf-token").json()["csrf_token"]
+      return {"x-csrf-token": token}
+  
+  
+  def _authenticate(client: TestClient, prefix: str = "ratelimit_user") -> str:
+      client.cookies.clear()
+      username = f"{prefix}_{uuid.uuid4().hex[:8]}"
+      resp = client.post(
+          "/api/v1/auth/register",
+          json={"username": username, "password": "password123"},
+      )
+      assert resp.status_code == 200
+      return username
+  
+  
+  def test_generic_api_rate_limit_caps_write_requests(client: TestClient, monkeypatch):
+      monkeypatch.setattr(main, "_RATE_API_LIMIT", 3)
+      monkeypatch.setattr(main, "_RATE_LIMIT_SENSITIVE_PATHS", {})
+      monkeypatch.setattr(main, "_RATE_LIMIT_SENSITIVE_PREFIXES", {})
+      _authenticate(client, "ratelimit_generic")
+  
+      statuses = []
+      for _ in range(4):
+          resp = client.post("/api/v1/datacenter/evolve", json={"title": "x"}, headers=_csrf_headers(client))
+          statuses.append(resp.status_code)
+  
+      assert statuses[:3] == [200, 200, 200]
+      assert statuses[3] == 429
+  
+  
+  def test_sensitive_api_uses_tighter_bucket(client: TestClient, monkeypatch):
+      monkeypatch.setattr(main, "_RATE_API_LIMIT", 10)
+      monkeypatch.setattr(main, "_RATE_SENSITIVE_LIMIT", 2)
+      monkeypatch.setattr(
+          main,
+          "_RATE_LIMIT_SENSITIVE_PATHS",
+          {
+              "/api/v1/datacenter/loop/tick": 2,
+          },
+      )
+      _authenticate(client, "ratelimit_sensitive")
+  
+      statuses = []
+      for _ in range(3):
+          resp = client.post("/api/v1/datacenter/loop/tick", headers=_csrf_headers(client))
+          statuses.append(resp.status_code)
+  
+      assert statuses[:2] == [200, 200]
+      assert statuses[2] == 429
+      assert client.post("/api/v1/datacenter/evolve", json={"title": "ok"}, headers=_csrf_headers(client)).status_code == 200
+  
+  
+  def test_auth_and_read_routes_are_exempt_from_api_bucket(client: TestClient, monkeypatch):
+      monkeypatch.setattr(main, "_RATE_API_LIMIT", 1)
+      monkeypatch.setattr(main, "_RATE_LIMIT_SENSITIVE_PATHS", {})
+      monkeypatch.setattr(main, "_RATE_LIMIT_SENSITIVE_PREFIXES", {})
+  
+      assert client.get("/api/v1/health").status_code == 200
+      assert client.get("/api/v1/health").status_code == 200
+  
+      register = client.post(
+          "/api/v1/auth/register",
+          json={"username": f"ratelimit_user_exempt_case_{uuid.uuid4().hex[:8]}", "password": "password123"},
+      )
+      assert register.status_code == 200
+  
+  ```
+  
+  ### 文件: `src/backend/tests/test_core_api_smoke.py`
+  ```py
+  # -*- coding: utf-8 -*-
+  """HTTP smoke coverage for core protected and public API paths."""
+  
+  from __future__ import annotations
+  
+  import time
+  
+  import pytest
+  from fastapi.testclient import TestClient
+  
+  from channels.marine_base import get_default_registry
+  import main
+  from main import app
+  
+  
+  @pytest.fixture(scope="module")
+  def started_client():
+      registry = get_default_registry()
+      previous_rate_limit_login = dict(main._RATE_LIMIT_LOGIN)
+      previous_rate_limit_ip = dict(main._RATE_LIMIT_IP)
+      registry._channels.clear()
+      main._RATE_LIMIT_LOGIN.clear()
+      main._RATE_LIMIT_IP.clear()
+      with TestClient(app) as client:
+          yield client
+      registry._channels.clear()
+      main._RATE_LIMIT_LOGIN.clear()
+      main._RATE_LIMIT_LOGIN.update(previous_rate_limit_login)
+      main._RATE_LIMIT_IP.clear()
+      main._RATE_LIMIT_IP.update(previous_rate_limit_ip)
+  
+  
+  def _register_and_get_csrf(client: TestClient, username_prefix: str) -> str:
+      username = f"{username_prefix}_{int(time.time() * 1000)}"
+      resp = client.post(
+          "/api/v1/auth/register",
+          json={"username": username, "password": "password123"},
+      )
+      assert resp.status_code == 200
+      csrf_resp = client.get("/api/v1/auth/csrf-token")
+      assert csrf_resp.status_code == 200
+      return csrf_resp.json()["csrf_token"]
+  
+  
+  class TestCoreApiSmoke:
+      def test_health_is_public(self, started_client):
+          resp = started_client.get("/api/v1/health")
+  
+          assert resp.status_code == 200
+          payload = resp.json()
+          assert payload["status"] == "ok"
+  
+      def test_protected_core_routes_require_auth(self, started_client):
+          for path in (
+              "/api/v1/agent-teams/overview",
+              "/api/v1/agent-teams/evolution/status",
+              "/api/v1/agent-config/plaza",
+              "/api/v1/agent-config/llm/status",
+          ):
+              resp = started_client.get(path)
+              assert resp.status_code == 401, path
+  
+      def test_authenticated_core_routes_return_success(self, started_client):
+          token = _register_and_get_csrf(started_client, "coreapi")
+          headers = {"x-csrf-token": token}
+  
+          teams_resp = started_client.get("/api/v1/agent-config/teams", headers=headers)
+          assert teams_resp.status_code == 200
+          assert isinstance(teams_resp.json(), list)
+  
+          overview_resp = started_client.get("/api/v1/agent-teams/overview", headers=headers)
+          assert overview_resp.status_code == 200
+          overview = overview_resp.json()
+          assert "evolution" in overview
+  
+          evolution_resp = started_client.get("/api/v1/agent-teams/evolution/status", headers=headers)
+          assert evolution_resp.status_code == 200
+          assert "status" in evolution_resp.json()
+  
+          plaza_list_resp = started_client.get("/api/v1/agent-config/plaza", headers=headers)
+          assert plaza_list_resp.status_code == 200
+          plaza_list = plaza_list_resp.json()
+          assert "items" in plaza_list
+          assert "total" in plaza_list
+  
+      def test_authenticated_p1_p2_api_shapes(self, started_client):
+          token = _register_and_get_csrf(started_client, "p1p2api")
+          headers = {"x-csrf-token": token}
+  
+          teams_resp = started_client.get("/api/v1/agent-config/teams", headers=headers)
+          assert teams_resp.status_code == 200
+          teams = teams_resp.json()
+          assert teams
+          team_id = teams[0]["team_id"]
+  
+          team_resp = started_client.get(f"/api/v1/agent-config/teams/{team_id}", headers=headers)
+          assert team_resp.status_code == 200
+          team_payload = team_resp.json()
+          agents_payload = team_payload.get("agents") or {}
+          agent_values = list(agents_payload.values()) if isinstance(agents_payload, dict) else agents_payload
+          assert agent_values
+          agent_id = agent_values[0]["agent_id"]
+  
+          profile_resp = started_client.get(
+              f"/api/v1/agent-config/teams/{team_id}/agents/{agent_id}/capability-profile",
+              headers=headers,
+          )
+          assert profile_resp.status_code == 200
+          profile = profile_resp.json()
+          assert profile["agent_id"] == agent_id
+          assert "success_rate" in profile
+          assert "capability_score" in profile
+  
+          reason_resp = started_client.post(
+              f"/api/v1/agent-config/teams/{team_id}/tasks/dispatch-reason",
+              json={"agent_id": agent_id, "task_description": "smoke"},
+              headers=headers,
+          )
+          assert reason_resp.status_code == 200
+          assert reason_resp.json()["reasons"]
+  
+          task_resp = started_client.post(
+              "/api/v1/agent-config/cost/generate-task",
+              json={
+                  "team_id": team_id,
+                  "violation_type": "OVER_BUDGET",
+                  "resource": "smoke",
+                  "estimated_saving": 12.5,
+              },
+              headers=headers,
+          )
+          assert task_resp.status_code == 200
+          task_payload = task_resp.json()
+          assert task_payload["task_id"].startswith("cost-")
+          assert task_payload["metadata"]["source"] == "cost_gate"
+  
+          savings_resp = started_client.get("/api/v1/agent-config/cost/savings-report", headers=headers)
+          assert savings_resp.status_code == 200
+          assert "total_savings" in savings_resp.json()
+  
+          audit_resp = started_client.get("/api/v1/agent-config/audit/recent", headers=headers)
+          assert audit_resp.status_code == 200
+          assert "entries" in audit_resp.json()
+  
+          events_resp = started_client.get("/api/v1/agent-config/runtime/events", headers=headers)
+          assert events_resp.status_code == 200
+          assert "events" in events_resp.json()
+  
+      def test_authenticated_plaza_create_returns_discussion_surface(self, started_client):
+          token = _register_and_get_csrf(started_client, "plazacreate")
+          resp = started_client.post(
+              "/api/v1/agent-config/plaza",
+              json={
+                  "name": "Core API Smoke Plaza",
+                  "description": "http smoke",
+                  "selected_agents": [],
+                  "chairperson_agent_id": "",
+              },
+              headers={"x-csrf-token": token},
+          )
+  
+          assert resp.status_code == 201
+          payload = resp.json()
+          assert payload["name"] == "Core API Smoke Plaza"
+          assert "id" in payload
+          delete_resp = started_client.delete(
+              f"/api/v1/agent-config/plaza/{payload['id']}",
+              headers={"x-csrf-token": token},
+          )
+          assert delete_resp.status_code == 200
+          assert delete_resp.json() == {"status": "deleted"}
+  
+      def test_logout_revokes_protected_core_access(self, started_client):
+          token = _register_and_get_csrf(started_client, "logoutcore")
+          headers = {"x-csrf-token": token}
+  
+          pre_logout = started_client.get("/api/v1/agent-teams/overview", headers=headers)
+          assert pre_logout.status_code == 200
+  
+          logout_resp = started_client.post("/api/v1/auth/logout", headers=headers)
+          assert logout_resp.status_code == 200
+          assert logout_resp.json()["revoked"] is True
+  
+          post_logout = started_client.get("/api/v1/agent-teams/overview", headers=headers)
+          assert post_logout.status_code == 401
+  
+      def test_authenticated_evolution_and_discussion_writes_return_expected_shape(self, started_client):
+          token = _register_and_get_csrf(started_client, "evolutionwrite")
+          headers = {"x-csrf-token": token}
+  
+          audit_resp = started_client.post("/api/v1/agent-teams/evolution/audit", headers=headers)
+          assert audit_resp.status_code == 200
+          audit_payload = audit_resp.json()
+          assert "audit_run" in audit_payload
+          assert "details" in audit_payload
+          assert "compliance_rating" in audit_payload
+  
+          cycle_resp = started_client.post("/api/v1/agent-teams/evolution/cycle", headers=headers)
+          assert cycle_resp.status_code == 200
+          cycle_payload = cycle_resp.json()
+          assert set(cycle_payload) >= {"cycle", "audit", "dispatch", "verify", "closed", "summary"}
+  
+          plaza_resp = started_client.post(
+              "/api/v1/agent-config/plaza",
+              json={
+                  "name": "Core API Evolution Plaza",
+                  "description": "http write path",
+                  "selected_agents": [],
+                  "chairperson_agent_id": "",
+              },
+              headers=headers,
+          )
+          assert plaza_resp.status_code == 201
+          plaza_id = plaza_resp.json()["id"]
+  
+          discussion_resp = started_client.post(
+              f"/api/v1/agent-config/plaza/{plaza_id}/discussions",
+              json={
+                  "topic": "Core API discussion",
+                  "description": "verify summary shape",
+                  "goal": "exercise write path",
+                  "moderator_agent_id": "",
+                  "max_rounds": 1,
+              },
+              headers=headers,
+          )
+          assert discussion_resp.status_code == 201
+          discussion_payload = discussion_resp.json()
+          assert discussion_payload["topic"] == "Core API discussion"
+          assert discussion_payload["status"] == "open"
+  
+          discussion_id = discussion_payload["id"]
+          summary_resp = started_client.get(
+              f"/api/v1/agent-config/plaza/{plaza_id}/discussions/{discussion_id}/summary",
+              headers=headers,
+          )
+          assert summary_resp.status_code == 200
+          summary_payload = summary_resp.json()
+          assert summary_payload["discussion_id"] == discussion_id
+          assert summary_payload["topic"] == "Core API discussion"
+          assert "plan_revision" in summary_payload
+  
+          delete_resp = started_client.delete(
+              f"/api/v1/agent-config/plaza/{plaza_id}",
+              headers=headers,
+          )
+          assert delete_resp.status_code == 200
+  
+  ```
+  
+  ### 文件: `src/backend/agents/api.py`
+  ```py
+  # -*- coding: utf-8 -*-
+  """AgentsGroup2026 Agent Team Framework -- REST API Router.
+  
+  Clawith-style CRUD API for teams, agents, models, tools, skills.
+  Tab-based organization:
+    1. Team Info
+    2. Model Pool
+    3. Tools
+    4. Skills
+    5. Agents -- 5-step wizard
+    6. Overview
+  """
+  
+  from __future__ import annotations
+  
+  import asyncio
+  import copy
+  from datetime import datetime, timezone
+  
+  from typing import Any, Dict, List, Optional
+  
+  from fastapi import APIRouter, Body, HTTPException, Query, status
+  from pydantic import BaseModel, Field
+  
+  from .models import (
+      AccessLevel,
+      AgentState,
+      AgentChannelConfig,
+      AgentPermission,
+      AgentPersonality,
+      AgentProfile,
+      AgentTemplateType,
+      HermesAgentConfig,
+      ModelConfig,
+      SkillCategory,
+      SkillDefinition,
+      ToolCategory,
+      ToolDefinition,
+      ToolsetDistribution,
+  )
+  from .hermes_research import (
+      RESEARCH_TOOLSET_DISTRIBUTIONS,
+      HERMES_TOOLSETS,
+      create_hermes_researcher,
+      build_research_system_prompt,
+      sample_toolsets,
+      resolve_tools,
+      get_research_distributions,
+      get_hermes_toolsets,
+  )
+  from .chat_harness import (
+      ChatHarness,
+      LLMProvider,
+      ProviderConfig,
+      get_chat_harness,
+  )
+  from .budget import TokenBudget, get_budget_guard, get_usage_store
+  from .budget.guard import save_budget_settings
+  from .secret_store import (
+      load_model_api_keys,
+      resolve_api_key,
+      save_default_llm_api_key,
+      save_model_api_keys,
+  )
+  from .execution_registry import (
+      ToolPermissionContext,
+      PortRuntime,
+      assemble_tool_pool,
+      build_execution_registry,
+  )
+  from .security.permission_resolver import PermissionResolver
+  from .session_store import (
+      list_sessions as list_stored_sessions,
+      search_sessions,
+  )
+  from .skill_registry import SkillRegistry, get_default_skills
+  from .team_manager import TeamManager
+  from .tool_registry import ToolRegistry, get_default_tools
+  
+  try:
+      from config import DEFAULT_PAGE_SIZE as _DEFAULT_PAGE_SIZE
+      from config import MAX_PAGE_SIZE as _MAX_PAGE_SIZE
+  except Exception:
+      _DEFAULT_PAGE_SIZE = 50
+      _MAX_PAGE_SIZE = 200
+  
+  
+  router = APIRouter(prefix="/api/v1/agent-config", tags=["agent-config"])
+  
+  
+  _team_manager: Optional[TeamManager] = None
+  _tool_registry: Optional[ToolRegistry] = None
+  _skill_registry: Optional[SkillRegistry] = None
+  
+  # ── Model Pool Persistence ──
+  import os as _mp_os, json as _mp_json
+  
+  _CONFIG_DIR = _mp_os.path.join(
+      _mp_os.path.dirname(_mp_os.path.dirname(_mp_os.path.dirname(
+          _mp_os.path.dirname(_mp_os.path.abspath(__file__))))),
+      "config",
+  )
+  _MODEL_POOL_PATH = _mp_os.path.join(_CONFIG_DIR, "model_pool.json")
+  
+  
+  def _normalize_pagination(limit: int, offset: int) -> tuple[int, int, bool]:
+      """Normalize optional limit/offset while preserving old unpaginated callers."""
+      limit = getattr(limit, "default", limit)
+      offset = getattr(offset, "default", offset)
+      limit = int(limit or 0)
+      offset = max(int(offset or 0), 0)
+      if limit < 0:
+          limit = 0
+      if limit > _MAX_PAGE_SIZE:
+          limit = _MAX_PAGE_SIZE
+      if offset > 0 and limit <= 0:
+          limit = _DEFAULT_PAGE_SIZE
+      return limit, offset, bool(limit > 0 or offset > 0)
+  
+  
+  def _paginate_optional(items: List[Dict[str, Any]], *, limit: int, offset: int) -> Any:
+      """Return either the legacy plain list or a paginated response envelope."""
+      limit, offset, paginate = _normalize_pagination(limit, offset)
+      if not paginate:
+          return items
+      total = len(items)
+      return {
+          "items": items[offset:offset + limit],
+          "total": total,
+          "limit": limit,
+          "offset": offset,
+          "has_more": offset + limit < total,
+      }
+  
+  
+  def _save_model_pool() -> None:
+      """Persist model pool: config to model_pool.json, secrets to .api_keys.json."""
+      if _team_manager is None:
+          return
+      data: Dict[str, Any] = {}
+      secrets: Dict[str, Dict[str, str]] = {}
+      for team in _team_manager.list_teams():
+          team_models = {}
+          team_secrets = {}
+          for m in team.models.values():
+              team_models[m.model_id] = {
+                  "model_id": m.model_id,
+                  "provider": m.provider,
+                  "name": m.name,
+                  "max_tokens": m.max_tokens,
+                  "temperature": m.temperature,
+                  "is_default": m.is_default,
+                  "enabled": m.enabled,
+                  "api_key": "",
+                  "api_base_url": m.api_base_url,
+              }
+              if m.api_key:
+                  team_secrets[m.model_id] = m.api_key
+          data[team.team_id] = team_models
+          if team_secrets:
+              secrets[team.team_id] = team_secrets
+      try:
+          _mp_os.makedirs(_CONFIG_DIR, exist_ok=True)
+          with open(_MODEL_POOL_PATH, "w", encoding="utf-8") as f:
+              _mp_json.dump(data, f, ensure_ascii=False, indent=2)
+          save_model_api_keys(secrets)
+      except Exception:
+          pass
+  
+  
+  def _load_model_pool(tm: TeamManager) -> None:
+      """Load persisted model pool from config/model_pool.json + .api_keys.json."""
+      if not _mp_os.path.isfile(_MODEL_POOL_PATH):
+          return
+      try:
+          with open(_MODEL_POOL_PATH, "r", encoding="utf-8") as f:
+              data = _mp_json.load(f)
+      except Exception:
+          return
+      secrets = load_model_api_keys()
+      for team in tm.list_teams():
+          team_data = data.get(team.team_id)
+          if not team_data:
+              continue
+          team_secrets = secrets.get(team.team_id, {})
+          # Replace the entire model pool with persisted version
+          team.models.clear()
+          for mid, mdata in team_data.items():
+              api_key = resolve_api_key(
+                  mdata.get("provider", "deepseek"),
+                  explicit=team_secrets.get(mid, ""),
+                  plaintext_fallback=mdata.get("api_key", ""),
+              )
+              model = ModelConfig(
+                  model_id=mdata.get("model_id", mid),
+                  provider=mdata.get("provider", "deepseek"),
+                  name=mdata.get("name", "deepseek-chat"),
+                  max_tokens=mdata.get("max_tokens", 8192),
+                  temperature=mdata.get("temperature", 0.7),
+                  is_default=mdata.get("is_default", False),
+                  enabled=mdata.get("enabled", True),
+                  api_key=api_key,
+                  api_base_url=(mdata.get("api_base_url", "") or "").strip(),
+              )
+              team.add_model(
+  ```
+  
+  (后续文件因 token 预算已省略)
+  
+  (后续文件因 token 预算已省略)
+  
+  
+  ## 前序步骤的产出 (递进式摘要)
+  
+  ### 步骤 01: pm_decompose (完整产出)
+  
+  # PM分解 — project_manager
+  
+  任务: LLM连通性测试任务
+  步骤: pm_decompose
+  Agent: build_pm
+  
+  ---
+  
+  📋 任务: f168234c-5a9
+  🤖 Agent: PM (project_manager)
+  📂 工作目录: /Users/panglaohu/Downloads/AgentsGroup2026
+  🔧 执行方式: DeepSeek API (直连)
+  ⏱️ 超时: 1200s
+  ────────────────────────────────────────────────────────────
+  📝 提示词:
+    你是 AgentsGroup2026 系统的 PM (project_manager)。
+    请执行以下开发任务:
+    
+    你是项目经理 (PM)。请对以下任务进行分解和规划:
+    
+    ## 任务
+    LLM连通性测试任务
+    测试 _check_task_runtime_ready 是否能读到 API key
+    
+    ## 📂 项目上下文 (系统自动预加载)
+    
+    ### 项目文件结构 (src/ 目录)
+    ```
+    src/frontend/Agent-digital-twin.html
+    src/frontend/agent-team-config.html
+    src/frontend/cost-dashboard.html
+    src/frontend/datacenter-ratchet-evolution.html
+    src/frontend/digital-twin-cli.html
+    src/frontend/extraction-pipeline.html
+    src/frontend/index.html
+    src/frontend/login.html
+    src/frontend/plaza.html
+    src/frontend/sandbox-twin.html
+    src/frontend/skill-extract.html
+    src/frontend/system-evolution.html
+    src/frontend/tasks.html
+    src/frontend/css/agent-team-config.css
+    src/frontend/css/base.css
+    src/frontend/css/components.css
+    src/frontend/css/cost-dashboard.css
+    src/frontend/css/openbridge-theme.css
+    src/frontend/css/sandbox-twin.css
+    src/frontend/css/skill-extract-timeline.css
+    src/frontend/css/skill-extract.css
+    src/frontend/css/tasks-ws.css
+    src/frontend/css/theme.css
+    src/frontend/css/topbar-ws.css
+    src/frontend/css/variables.css
+    src/frontend/css/ws-theme-bridge.css
+    src/frontend/js/ag-context.js
+    src/frontend/js/agent-detail.js
+    src/frontend/js/agent-team-config.js
+    src/frontend/js/api.js
+    src/frontend/js/cost-dashboard.js
+    src/frontend/js/digital-twin-cli-3d.js
+    src/frontend/js/digital-twin-cli.js
+    src/frontend/js/evidence-runs.js
+    src/frontend/js/extract-routing.js
+    src/frontend/js/global-nav.js
+    src/frontend/js/global-nav.js.bak
+    src/frontend/js/i18n.js
+    src/frontend/js/nav-sidebar.js
+    src/frontend/js/nav.js
+    src/frontend/js/plaza.js
+    src/frontend/js/sandbox-twin-3d.js
+    src/frontend/js/sandbox-twin.js
+    src/frontend/js/sessions-runtime.js
+    src/frontend/js/skill-extract-timeline.js
+    src/frontend/js/skill-extract.js
+    src/frontend/js/system-evolution.js
+    src/frontend/js/tasks-view.js
+    src/frontend/js/token-factory.js
+    src/frontend/js/tools-skills.js
+    src/frontend/js/utils.js
+    src/frontend/js/wizard.js
+    src/frontend/js/digital-twin/director.js
+    src/frontend/js/digital-twin/secs-core.js
+    src/frontend/js/digital-twin/v4-evolution.js
+    src/frontend/js/digital-twin/v4-scenario-evolution.js
+    src/frontend/js/digital-twin/v4-scenarios.js
+    src/frontend/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json
+    src/frontend/__tests__/ag-context.test.js
+    src/frontend/__tests__/agent-config.test.js
+    src/frontend/__tests__/agent-detail-digital-employee.test.js
+    src/frontend/__tests__/agent-detail-pagination.test.js
+    src/frontend/__tests__/agent-team-config-delete.test.js
+    src/frontend/__tests__/agent-team-config-pagination.test.js
+    src/frontend/__tests__/agent-team-config-state.test.js
+    src/frontend/__tests__/api.test.js
+    src/frontend/__tests__/close-form.test.js
+    src/frontend/__tests__/cost-dashboard.test.js
+    src/frontend/__tests__/csrf-pages.test.js
+    src/frontend/__tests__/digital-twin-cli-pagination.test.js
+    src/frontend/__tests__/digital-twin-move-state-machine.test.js
+    src/frontend/__tests__/digital-twin-move-vm.test.js
+    src/frontend/__tests__/digital-twin-ratchet.test.js
+    src/frontend/__tests__/digital-twin-state.test.js
+    src/frontend/__tests__/evidence-runs.test.js
+    src/frontend/__tests__/extract-routing.test.js
+    src/frontend/__tests__/frontend-big-change-smoke.test.js
+    src/frontend/__tests__/global-nav.test.js
+    src/frontend/__tests__/login-page-flow.test.js
+    src/frontend/__tests__/plaza-action-paths.test.js
+    src/frontend/__tests__/plaza-modal-input.test.js
+    src/frontend/__tests__/plaza-pagination.test.js
+    src/frontend/__tests__/plaza-runtime-helpers.test.js
+    src/frontend/__tests__/plaza-vitest-new.test.js
+    src/frontend/__tests__/scenario-cards.test.js
+    src/frontend/__tests__/skill-extract-action-paths.test.js
+    src/frontend/__tests__/skill-extract-modal-flow.test.js
+    src/frontend/__tests__/skill-extract-smoke.test.js
+    src/frontend/__tests__/skill-extract-verification.test.js
+    src/frontend/__tests__/skill-publish-gate.test.js
+    src/frontend/__tests__/system-evolution.test.js
+    src/frontend/__tests__/tasks-pagination.test.js
+    src/frontend/__tests__/team-unified.test.js
+    src/frontend/__tests__/toast-robustness.test.js
+    src/frontend/__tests__/tools-skills.test.js
+    src/frontend/__tests__/utils-surface.test.js
+    src/frontend/__tests__/utils.test.js
+    src/frontend/__tests__/wizard-pagination.test.js
+    src/backend/0tfuaiyp
+    src/backend/__init__.py
+    src/backend/agent_team_api.py
+    src/backend/ci_cost_gate.py
+    src/backend/config.py
+    src/backend/datacenter_api.py
+    src/backend/main.py
+    src/backend/main.py.bak
+    src/backend/server.log
+    src/backend/startup_check.py
+    src/backend/startup_validator.py
+    src/backend/token_factory.py
+    src/backend/tests/__init__.py
+    src/backend/tests/conftest.py
+    src/backend/tests/conftest.py.bak
+    src/backend/tests/test_ab_testing.py
+    src/backend/tests/test_agent_skill_binding.py
+    src/backend/tests/test_agent_toolbox.py
+    src/backend/tests/test_api_handler_integration.py
+    src/backend/tests/test_api_integration_extended.py
+    src/backend/tests/test_api_pagination.py
+    src/backend/tests/test_api_rate_limit.py
+    src/backend/tests/test_auth_csrf.py
+    src/backend/tests/test_channel_event_bridge.py
+    src/backend/tests/test_chaos_stability.py
+    src/backend/tests/test_core_api_smoke.py
+    src/backend/tests/test_cost_gate.py
+    src/backend/tests/test_cost_monitor.py
+    src/backend/tests/test_datacenter_api.py
+    src/backend/tests/test_evidence_store.py
+    src/backend/tests/test_evolution_evidence_detail.py
+    src/backend/tests/test_evolution_race.py
+    src/backend/tests/test_evolution_race.py.bak
+    src/backend/tests/test_execution_evidence.py
+    src/backend/tests/test_fingerprint.py
+    src/backend/tests/test_fingerprint.py.bak
+    src/backend/tests/test_frontend_auth_contract.py
+    src/backend/tests/test_gate_evaluator.py
+    src/backend/tests/test_gate_evaluator.py.bak
+    src/backend/tests/test_main_health.py
+    src/backend/tests/test_merge_plugin.py
+    src/backend/tests/test_merge_plugin.py.bak
+    src/backend/tests/test_models.py
+    src/backend/tests/test_models.py.bak
+    src/backend/tests/test_network_egress.py
+    src/backend/tests/test_network_egress.py.bak
+    src/backend/tests/test_operation_store.py
+    src/backend/tests/test_permissions_and_secrets.py
+    src/backend/tests/test_plan_loop_runtime.py
+    src/backend/tests/test_plaza_consensus.py
+    src/backend/tests/test_plaza_dispatch.py
+    src/backend/tests/test_plaza_evolution_bridge.py
+    ... (共 1652 个 src/ 文件)
+    
+    ```
+    
+    ### 文件: `src/frontend/js/api.js`
+    ```js
+    /**
+     * AgentsGroup2026 — Shared API Client
+     * Unified fetch wrapper with error handling, offline detection,
+     * and pagination support. Load before page-specific scripts.
+     * Exposes window.api with .request(), .get(), .post(), .put(), .del(), .list()
+     */
+    (function () {
+      'use strict';
+    
+      var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+      var api = window.api = {};
+    
+      // Last error for debugging
+      api._lastError = null;
+    
+      // Offline state (consumed by page-specific UI)
+      api._offline = false;
+      api._onOffline = null;  // callback when offline status changes
+      api._onError = null;    // callback(msg) for 4xx/5xx
+    
+      // CSRF token (fetched from endpoint and cached)
+      api._csrfToken = null;
+      api._csrfPromise = null;
+      api._csrfHeaderName = 'X-CSRF-Token';
+      api._requestIdHeaderName = 'X-Request-ID';
+      api._lastRequestId = '';
+    
+      api.setCsrfToken = function (token) {
+        api._csrfToken = token || '';
+        api._csrfPromise = api._csrfToken ? Promise.resolve(api._csrfToken) : null;
+        return api._csrfToken;
+      };
+    
+      api.clearCsrfToken = function () {
+        api._csrfToken = null;
+        api._csrfPromise = null;
+      };
+    
+      api.getLastRequestId = function () {
+        return api._lastRequestId || '';
+      };
+    
+      api._authRedirecting = false;
+    
+      api.decorateErrorMessage = function (message, requestId) {
+        var text = String(message || '');
+        var id = requestId || api.getLastRequestId() || (api._lastError && api._lastError.request_id) || '';
+        if (!id || text.indexOf('请求ID:') !== -1) return text;
+        return text + ' · 请求ID: ' + id;
+      };
+    
+      function withCredentials(opts) {
+        opts = opts || {};
+        if (!opts.credentials) opts.credentials = 'same-origin';
+        return opts;
+      }
+    
+      function isStateChanging(method) {
+        method = (method || 'GET').toUpperCase();
+        return method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH';
+      }
+    
+      function getRequestUrl(input) {
+        if (typeof input === 'string') return input;
+        if (input && typeof input.url === 'string') return input.url;
+        return '';
+      }
+    
+      function _resolveTarget(input) {
+        var url = getRequestUrl(input);
+        if (!url) return { csrfAware: false, sameOrigin: false };
+        try {
+          var resolved = new URL(url, window.location.origin);
+          var current = new URL(window.location.origin);
+          var sameOrigin = resolved.origin === current.origin;
+          var csrfAware = sameOrigin || (
+            resolved.protocol === current.protocol &&
+            resolved.hostname === current.hostname
+          );
+          return { csrfAware: csrfAware, sameOrigin: sameOrigin };
+        } catch (e) {
+          return { csrfAware: false, sameOrigin: false };
+        }
+      }
+    
+      function hasHeader(headers, name) {
+        if (!headers || typeof headers.has !== 'function') return false;
+        return headers.has(name) || headers.has(name.toLowerCase());
+      }
+    
+      function isAuthEndpointPath(pathname) {
+        return pathname.indexOf('/api/v1/auth/') === 0;
+      }
+    
+      function redirectToLogin() {
+        if (api._authRedirecting) return;
+        if (window.location.pathname === '/login.html') return;
+        api._authRedirecting = true;
+        var next = window.location.pathname + window.location.search + window.location.hash;
+        window.location.href = '/login.html?next=' + encodeURIComponent(next);
+      }
+    
+      function maybeHandleUnauthorizedResponse(response, input) {
+        if (!response || response.status !== 401) return;
+        var url = getRequestUrl(input);
+        if (!url) return;
+        try {
+          var resolved = new URL(url, window.location.origin);
+          if (resolved.pathname.indexOf('/api/v1/') !== 0) return;
+          if (isAuthEndpointPath(resolved.pathname)) return;
+          redirectToLogin();
+        } catch (e) {
+          /* ignore malformed URLs */
+        }
+      }
+    
+      function nextRequestId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          return window.crypto.randomUUID();
+        }
+        return 'ag-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+      }
+    
+      function getRequestIdFromPrepared(input, opts) {
+        if (typeof Request !== 'undefined' && input instanceof Request) {
+          return input.headers.get(api._requestIdHeaderName) || '';
+        }
+        if (opts && opts.headers && typeof opts.headers.get === 'function') {
+          return opts.headers.get(api._requestIdHeaderName) || '';
+        }
+        return '';
+      }
+    
+      function isCsrfFailurePayload(payload) {
+        if (!payload) return false;
+        var detail = payload.detail || payload.message || '';
+        return typeof detail === 'string' && /csrf token invalid or expired/i.test(detail);
+      }
+    
+      async function isCsrfFailureResponse(response) {
+        if (!response || response.status !== 403 || typeof response.clone !== 'function') return false;
+        try {
+          var payload = await response.clone().json();
+          return isCsrfFailurePayload(payload);
+        } catch (e) {
+          try {
+            var text = await response.clone().text();
+            return /csrf token invalid or expired/i.test(text || '');
+          } catch (ignored) {
+            return false;
+          }
+        }
+      }
+    
+      async function prepareRequest(input, opts) {
+        var target = _resolveTarget(input);
+        if (!target.csrfAware) {
+          return [input, opts];
+        }
+    
+        var requestLike = (typeof Request !== 'undefined') && input instanceof Request;
+        var method = (opts && opts.method) || (requestLike ? input.method : 'GET');
+        var headers = new Headers((opts && opts.headers) || (requestLike ? input.headers : undefined) || undefined);
+    
+        if (isStateChanging(method)) {
+          await api.fetchCsrfToken();
+          if (api._csrfToken && !hasHeader(headers, api._csrfHeaderName)) {
+            headers.set(api._csrfHeaderName, api._csrfToken);
+          }
+        }
+        if (!hasHeader(headers, api._requestIdHeaderName)) {
+          headers.set(api._requestIdHeaderName, nextRequestId());
+        }
+    
+        var finalOpts = {};
+        if (opts) {
+          Object.keys(opts).forEach(function (key) {
+            if (key !== 'headers') finalOpts[key] = opts[key];
+          });
+        }
+        finalOpts.headers = headers;
+        if (!finalOpts.credentials) {
+          finalOpts.credentials = (requestLike && input.credentials) || (target.sameOrigin ? 'same-origin' : 'include');
+        }
+    
+        if (requestLike) {
+          return [new Request(input, finalOpts), undefined];
+        }
+        return [input, finalOpts];
+      }
+    
+      async function fetchWithCsrfRetry(input, opts) {
+        var retryInput = (typeof Request !== 'undefined' && input instanceof Request) ? input.clone() : input;
+        var prepared = await prepareRequest(input, opts);
+        var requestId = getRequestIdFromPrepared(prepared[0], prepared[1]);
+        var response = await nativeFetch(prepared[0], prepared[1]);
+        maybeHandleUnauthorizedResponse(response, prepared[0]);
+        if (!(await isCsrfFailureResponse(response))) {
+          return { response: response, requestId: requestId };
+        }
+    
+        api.clearCsrfToken();
+        await api.fetchCsrfToken();
+        var retryPrepared = await prepareRequest(retryInput, opts);
+        var retryRequestId = getRequestIdFromPrepared(retryPrepared[0], retryPrepared[1]) || requestId;
+        var retryResponse = await nativeFetch(retryPrepared[0], retryPrepared[1]);
+        maybeHandleUnauthorizedResponse(retryResponse, retryPrepared[0]);
+        return { response: retryResponse, requestId: retryRequestId };
+      }
+    
+      /**
+       * Fetch a fresh CSRF token from the server and cache it.
+       */
+      api.fetchCsrfToken = function () {
+        if (api._csrfToken) return Promise.resolve(api._csrfToken);
+        if (api._csrfPromise) return api._csrfPromise;
+        api._csrfPromise = nativeFetch('/api/v1/auth/csrf-token', withCredentials())
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            return api.setCsrfToken(d.csrf_token || '');
+          })
+          .catch(function () {
+            api._csrfPromise = null;
+            return '';
+          });
+        return api._csrfPromise;
+      };
+      /**
+       * Main request function.
+       * @param {string} url  - Full or relative URL
+       * @param {object} [opts] - fetch options (method, headers, body)
+       * @returns {object|null} - Parsed JSON response, or null on error
+       */
+      api.request = async function (url, opts) {
+        try {
+          var result = await fetchWithCsrfRetry(url, opts);
+          var outgoingRequestId = result.requestId;
+          var r = result.response;
+          api._lastRequestId = r.headers && r.headers.get ? (r.headers.get(api._requestIdHeaderName) || outgoingRequestId) : outgoingRequestId;
+          if (api._offline) {
+            api._offline = false;
+            if (api._onOffline) api._onOffline(false);
+          }
+          if (!r.ok) {
+            var msg = '';
+            try { var d = await r.json(); msg = d.detail || d.message || ''; } catch (e) { /* ignore parse errors */ }
+            console.warn('API ' + r.status + ': ' + url, msg);
+            api._lastError = { status: r.status, message: msg, url: url, request_id: api._lastRequestId || outgoingRequestId };
+            if (api._onError) api._onError(msg || 'HTTP ' + r.status);
+            api._lastViewError = msg || 'HTTP ' + r.status;
+            return null;
+          }
+          api._lastError = null;
+          return await r.json();
+        } catch (e) {
+          console.error('API error: ' + url, e);
+          api._lastRequestId = api._lastRequestId || outgoingRequestId || '';
+          if (e.name === 'TypeError' || (e.message && e.message.indexOf('fetch') !== -1)) {
+            api._offline = true;
+            if (api._onOffline) api._onOffline(true);
+          }
+          api._lastError = { status: 0, message: e.message, url: url, network: true, request_id: api._lastRequestId || outgoingRequestId || '' };
+          if (api._onError) api._onError(e.message);
+          api._lastViewError = e.message;
+          return null;
+        }
+      };
+    
+      /**
+       * Shorthand for GET requests
+       */
+      api.get = function (url) {
+        return api.request(url);
+      };
+    
+      /**
+       * Shorthand for POST/PUT/DELETE with JSON body
+       * Automatically includes CSRF token for state-changing requests.
+       */
+      api.send = async function (url, method, body) {
+        var opts = {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+        };
+        if (body !== undefined) opts.body = JSON.stringify(body);
+        return api.request(url, opts);
+      };
+    
+      /**
+       * POST shorthand
+       */
+      api.post = function (url, body) {
+        return api.send(url, 'POST', body);
+      };
+    
+      /**
+       * PUT shorthand
+       */
+      api.put = function (url, body) {
+        return api.send(url, 'PUT', body);
+      };
+    
+      /**
+       * DELETE shorthand
+       */
+      api.del = function (url) {
+        var opts = { method: 'DELETE' };
+        if (api._csrfToken) {
+          opts.headers = opts.headers || {};
+          opts.headers[api._csrfHeaderName] = api._csrfToken;
+        }
+        return api.request(url, opts);
+      };
+    
+      api.logout = async function () {
+        var result = await api.post('/api/v1/auth/logout');
+        api.clearCsrfToken();
+        return result;
+      };
+    
+      /**
+       * Pagination wrapper — adds limit/offset/query params to a list GET
+       * Returns { items, total, limit, offset, has_more }
+       */
+      api.list = function (baseUrl, limit, offset) {
+        limit = limit || 50;
+        offset = offset || 0;
+        var sep = baseUrl.indexOf('?') >= 0 ? '&' : '?';
+        return api.request(baseUrl + sep + 'limit=' + limit + '&offset=' + offset);
+      };
+    
+      // Global CSRF-aware fetch wrapper for direct fetch() calls in other scripts.
+      // Usage: replace fetch(url, opts) with window._agFetch(url, opts) for state-changing requests.
+      window._agFetch = async function (url, opts) {
+        var result = await fetchWithCsrfRetry(url, opts);
+        return result.response;
+      };
+    
+      if (nativeFetch) {
+        window.fetch = async function (input, opts) {
+          var prepared = await prepareRequest(input, opts);
+          return nativeFetch(prepared[0], prepared[1]);
+        };
+      }
+    
+      // Pre-fetch at load time
+      api.fetchCsrfToken();
+    })();
+    
+    ```
+    
+    ### 文件: `src/frontend/__tests__/api.test.js`
+    ```js
+    /**
+     * Tests for api.js — fetch wrapper with CSRF, offline detection, pagination
+     * Uses vi.fn() to mock fetch and test request/response/error paths
+     */
+    import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+    
+    // We test the api.js logic by replicating its IIFE behavior
+    // api.js exposes window.api with .request(), .get(), .post(), .put(), .del(), .list()
+    
+    describe('api.js - request', () => {
+      let api;
+    
+      beforeEach(() => {
+        // Simulate api.js IIFE
+        globalThis.fetch = vi.fn();
+        globalThis.window = globalThis;
+        globalThis.location = { origin: 'http://127.0.0.1:5173', hostname: '127.0.0.1', protocol: 'http:' };
+    
+        // Re-create api like api.js does
+        api = {
+          _lastError: null,
+          _offline: false,
+          _onOffline: null,
+          _onError: null,
+          _csrfToken: null,
+          _csrfPromise: null,
+          _csrfHeaderName: 'X-CSRF-Token',
+          _authRedirecting: false,
+    
+          setCsrfToken(token) {
+            this._csrfToken = token || '';
+            this._csrfPromise = this._csrfToken ? Promise.resolve(this._csrfToken) : null;
+            return this._csrfToken;
+          },
+    
+          clearCsrfToken() {
+            this._csrfToken = null;
+            this._csrfPromise = null;
+          },
+    
+          withCredentials(opts) {
+            opts = opts || {};
+            if (!opts.credentials) opts.credentials = 'same-origin';
+            return opts;
+          },
+    
+          fetchCsrfToken() {
+            if (this._csrfToken) return Promise.resolve(this._csrfToken);
+            if (this._csrfPromise) return this._csrfPromise;
+            this._csrfPromise = fetch('/api/v1/auth/csrf-token', this.withCredentials())
+              .then(r => r.json())
+              .then(d => this.setCsrfToken(d.csrf_token || ''))
+              .catch(() => { this._csrfPromise = null; return ''; });
+            return this._csrfPromise;
+          },
+    
+          _resolveTarget(url) {
+            if (!url) return { csrfAware: false, sameOrigin: false };
+            const resolved = new URL(url, globalThis.location.origin);
+            const current = new URL(globalThis.location.origin);
+            const sameOrigin = resolved.origin === current.origin;
+            const csrfAware = sameOrigin || (
+              resolved.protocol === current.protocol &&
+              resolved.hostname === current.hostname
+            );
+            return { csrfAware, sameOrigin };
+          },
+    
+          redirectToLogin() {
+            if (this._authRedirecting) return;
+            if (globalThis.location.pathname === '/login.html') return;
+            this._authRedirecting = true;
+            const next = (globalThis.location.pathname || '') + (globalThis.location.search || '') + (globalThis.location.hash || '');
+            globalThis.location.href = '/login.html?next=' + encodeURIComponent(next);
+          },
+    
+          maybeHandleUnauthorizedResponse(response, url) {
+            if (!response || response.status !== 401) return;
+            const resolved = new URL(url, globalThis.location.origin);
+            if (!resolved.pathname.startsWith('/api/v1/')) return;
+            if (resolved.pathname.startsWith('/api/v1/auth/')) return;
+            this.redirectToLogin();
+          },
+    
+          isCsrfFailurePayload(payload) {
+            if (!payload) return false;
+            const detail = payload.detail || payload.message || '';
+            return typeof detail === 'string' && /csrf token invalid or expired/i.test(detail);
+          },
+    
+          async isCsrfFailureResponse(response) {
+            if (!response || response.status !== 403 || typeof response.clone !== 'function') return false;
+            try {
+              const payload = await response.clone().json();
+              return this.isCsrfFailurePayload(payload);
+            } catch (e) {
+              return false;
+            }
+          },
+    
+          async request(url, opts) {
+            const method = (opts && opts.method) ? opts.method.toUpperCase() : 'GET';
+            const target = this._resolveTarget(url);
+            try {
+              const sendOnce = async () => {
+                let nextOpts = opts ? { ...opts, headers: { ...(opts.headers || {}) } } : undefined;
+                if (target.csrfAware && (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH')) {
+                  await this.fetchCsrfToken();
+                  if (this._csrfToken) {
+                    nextOpts = nextOpts || {};
+                    nextOpts.headers = nextOpts.headers || {};
+                    nextOpts.headers[this._csrfHeaderName] = this._csrfToken;
+                  }
+                }
+                const finalOpts = this.withCredentials(nextOpts);
+                if (target.csrfAware && !finalOpts.credentials) {
+                  finalOpts.credentials = target.sameOrigin ? 'same-origin' : 'include';
+                } else if (target.csrfAware && finalOpts.credentials === 'same-origin' && !target.sameOrigin) {
+                  finalOpts.credentials = 'include';
+                }
+                return fetch(url, finalOpts);
+              };
+    
+              let r = await sendOnce();
+              this.maybeHandleUnauthorizedResponse(r, url);
+              if (await this.isCsrfFailureResponse(r)) {
+                this.clearCsrfToken();
+                r = await sendOnce();
+                this.maybeHandleUnauthorizedResponse(r, url);
+              }
+              if (this._offline) {
+                this._offline = false;
+                if (this._onOffline) this._onOffline(false);
+              }
+              if (!r.ok) {
+                this._lastError = { status: r.status, message: '', url };
+                if (this._onError) this._onError('HTTP ' + r.status);
+                return null;
+              }
+              this._lastError = null;
+              return await r.json();
+            } catch (e) {
+              if (e.name === 'TypeError' || (e.message && e.message.indexOf('fetch') !== -1)) {
+                this._offline = true;
+                if (this._onOffline) this._onOffline(true);
+              }
+              this._lastError = { status: 0, message: e.message, url, network: true };
+              if (this._onError) this._onError(e.message);
+              return null;
+            }
+          },
+    
+          async send(url, method, body) {
+            await this.fetchCsrfToken();
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (this._csrfToken) opts.headers[this._csrfHeaderName] = this._csrfToken;
+            if (body !== undefined) opts.body = JSON.stringify(body);
+            return this.request(url, opts);
+          },
+    
+          get(url) { return this.request(url); },
+          post(url, body) { return this.send(url, 'POST', body); },
+          put(url, body) { return this.send(url, 'PUT', body); },
+          del(url) { return this.send(url, 'DELETE'); },
+          async logout() {
+            const result = await this.post('/api/v1/auth/logout');
+            this.clearCsrfToken();
+            return result;
+          },
+    
+          list(baseUrl, limit, offset) {
+            limit = limit || 50;
+            offset = offset || 0;
+            const sep = baseUrl.indexOf('?') >= 0 ? '&' : '?';
+            return this.request(baseUrl + sep + 'limit=' + limit + '&offset=' + offset);
+          },
+        };
+      });
+    
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+    
+      describe('GET requests', () => {
+        it('returns parsed JSON on success', async () => {
+          vi.mocked(fetch).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ teams: ['a', 'b'] }),
+          });
+    
+          const result = await api.get('/api/v1/teams');
+          expect(result).toEqual({ teams: ['a', 'b'] });
+          expect(fetch).toHaveBeenCalledWith('/api/v1/teams', { credentials: 'same-origin' });
+        });
+    
+        it('returns null on 404', async () => {
+          vi.mocked(fetch).mockResolvedValueOnce({
+            ok: false,
+            status: 404,
+            json: async () => ({ detail: 'Not found' }),
+          });
+    
+          const onError = vi.fn();
+          api._onError = onError;
+    
+          const result = await api.get('/api/v1/teams');
+          expect(result).toBeNull();
+          expect(onError).toHaveBeenCalledWith('HTTP 404');
+        });
+    
+        it('redirects to login on protected API 401', async () => {
+          globalThis.location.pathname = '/system-evolution.html';
+          globalThis.location.search = '?panel=items';
+          globalThis.location.hash = '#trail';
+          vi.mocked(fetch).mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            json: async () => ({ detail: '认证已失效，请重新登录' }),
+          });
+    
+          const result = await api.get('/api/v1/agent-config/plaza');
+          expect(result).toBeNull();
+          expect(globalThis.location.href).toBe('/login.html?next=' + encodeURIComponent('/system-evolution.html?panel=items#trail'));
+        });
+    
+        it('returns null and triggers offline on network error', async () => {
+          vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    
+          const onOffline = vi.fn();
+          api._onOffline = onOffline;
+    
+          const result = await api.get('/api/v1/teams');
+          expect(result).toBeNull();
+          expect(api._offline).toBe(true);
+          expect(onOffline).toHaveBeenCalledWith(true);
+        });
+      });
+    
+      describe('POST requests', () => {
+        it('includes CSRF token in headers', async () => {
+          // Mock CSRF endpoint
+          vi.mocked(fetch)
+            .mockResolvedValueOnce({ // CSRF token fetch
+              ok: true,
+              json: async () => ({ csrf_token: 'test-csrf-token-123' }),
+            })
+            .mockResolvedValueOnce({ // actual POST
+              ok: true,
+              json: async () => ({ success: true }),
+            });
+    
+          const result = await api.post('/api/v1/teams', { name: 'test' });
+          expect(result).toEqual({ success: true });
+    
+          // Check CSRF was included
+          const postCall = vi.mocked(fetch).mock.calls[1];
+          expect(postCall[1].method).toBe('POST');
+          expect(postCall[1].headers['X-CSRF-Token']).toBe('test-csrf-token-123');
+        });
+    
+        it('includes CSRF token and credentials for same-host absolute backend URLs', async () => {
+          vi.mocked(fetch)
+            .mockResolvedValueOnce({
+              ok: true,
+              json: async () => ({ csrf_token: 'test-csrf-token-123' }),
+            })
+            .mockResolvedValueOnce({
+              ok: true,
+              json: async () => ({ success: true }),
+            });
+    
+          const result = await api.post('http://127.0.0.1:8080/api/v1/datacenter/loop/tick');
+          expect(result).toEqual({ success: true });
+    
+          const postCall = vi.mocked(fetch).mock.calls[1];
+          expect(postCall[0]).toBe('http://127.0.0.1:8080/api/v1/datacenter/loop/tick');
+          expect(postCall[1].headers['X-CSRF-Token']).toBe('test-csrf-token-123');
+          expect(postCall[1].credentials).toBe('include');
+        });
+    
+        it('refreshes CSRF token and retries once when it has expired', async () => {
+          vi.mocked(fetch)
+            .mockResolvedValueOnce({
+              ok: true,
+              json: async () => ({ csrf_token: 'stale-token' }),
+            })
+            .mockResolvedValueOnce({
+              ok: false,
+              status: 403,
+              clone() { return this; },
+              json: async () => ({ detail: 'CSRF token invalid or expired, please refresh the page' }),
+            })
+            .mockResolvedValueOnce({
+              ok: true,
+              json: async () => ({ csrf_token: 'fresh-token' }),
+            })
+            .mockResolvedValueOnce({
+              ok: true,
+              json: async () => ({ success: true }),
+            });
+    
+          const result = await api.post('/api/v1/agent-config/plaza/demo/discussions', { topic: 'smoke' });
+          expect(result).toEqual({ success: true });
+          expect(fetch).toHaveBeenCalledTimes(4);
+          expect(vi.mocked(fetch).mock.calls[1][1].headers['X-CSRF-Token']).toBe('stale-token');
+          expect(vi.mocked(fetch).mock.calls[3][1].headers['X-CSRF-Token']).toBe('fresh-token');
+        });
+    
+        it('does NOT inject CSRF for GET requests', async () => {
+          vi.mocked(fetch).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ data: 'ok' }),
+          });
+    
+          // First call would be CSRF token fetch if triggered, but GET should skip it
+          await api.get('/api/v1/teams');
+          expect(fetch).toHaveBeenCalledTimes(1); // Only GET, no CSRF fetch
+        });
+    
+        it('allows pages to prime CSRF after login/register', async () => {
+          api.setCsrfToken('preset-token');
+    
+          expect(api._csrfToken).toBe('preset-token');
+        });
+      });
+    
+      describe('pagination', () => {
+        it('appends limit and offset to URL', async () => {
+          vi.mocked(fetch).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ items: [], total: 0 }),
+          });
+    
+          await api.list('/api/v1/teams', 25, 10);
+          expect(fetch).toHaveBeenCalledWith('/api/v1/teams?limit=25&offset=10', { credentials: 'same-origin' });
+        });
+    
+        it('uses ? or & correctly', async () => {
+          vi.mocked(fetch).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ items: [], total: 0 }),
+          });
+    
+          await api.list('/api/v1/teams?status=active', 50, 0);
+          expect(fetch).toHaveBeenCalledWith('/api/v1/teams?status=active&limit=50&offset=0', { credentials: 'same-origin' });
+        });
+      });
+    
+      describe('error recovery', () => {
+        it('clears offline flag on successful request', async () => {
+          api._offline = true;
+    
+          vi.mocked(fetch).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ ok: true }),
+          });
+    
+          await api.get('/api/v1/health');
+          expect(api._offline).toBe(false);
+        });
+    
+        it('clears the cached csrf token on logout', async () => {
+          api.setCsrfToken('to-clear');
+          vi.mocked(fetch)
+            .mockResolvedValueOnce({
+              ok: true,
+              json: async () => ({ ok: true }),
+            });
+    
+          await api.logout();
+          expect(api._csrfToken).toBeNull();
+        });
+      });
+    });
+    
+    ```
+    
+    ### 文件: `src/backend/tests/test_api_handler_integration.py`
+    ```py
+    # -*- coding: utf-8 -*-
+    """HTTP-level regressions for selected agent team and digital twin handlers."""
+    
+    from __future__ import annotations
+    
+    import time
+    
+    import pytest
+    from fastapi.testclient import TestClient
+    
+    from agents import api as api_module
+    from channels.marine_base import get_default_registry
+    import main
+    from main import app
+    
+    
+    @pytest.fixture(scope="module")
+    def started_client():
+        registry = get_default_registry()
+        previous_rate_limit_login = dict(main._RATE_LIMIT_LOGIN)
+        previous_rate_limit_ip = dict(main._RATE_LIMIT_IP)
+        registry._channels.clear()
+        main._RATE_LIMIT_LOGIN.clear()
+        main._RATE_LIMIT_IP.clear()
+        with TestClient(app) as client:
+            yield client
+        registry._channels.clear()
+        main._RATE_LIMIT_LOGIN.clear()
+        main._RATE_LIMIT_LOGIN.update(previous_rate_limit_login)
+        main._RATE_LIMIT_IP.clear()
+        main._RATE_LIMIT_IP.update(previous_rate_limit_ip)
+    
+    
+    def _register_and_get_csrf(client: TestClient, username_prefix: str) -> str:
+        username = f"{username_prefix}_{int(time.time() * 1000)}"
+        resp = client.post(
+            "/api/v1/auth/register",
+            json={"username": username, "password": "password123"},
+        )
+        assert resp.status_code == 200
+        csrf_resp = client.get("/api/v1/auth/csrf-token")
+        assert csrf_resp.status_code == 200
+        return csrf_resp.json()["csrf_token"]
+    
+    
+    class TestDigitalTwinHandlerIntegration:
+        def test_digital_twin_move_validates_request_body(self, started_client):
+            token = _register_and_get_csrf(started_client, "dtmove")
+    
+            resp = started_client.post(
+                "/api/v1/agent-config/digital-twin/move",
+                json={"agent_id": "agent-1"},
+                headers={"x-csrf-token": token},
+            )
+    
+            assert resp.status_code == 422
+    
+        def test_digital_twin_interact_accepts_from_alias(self, started_client, monkeypatch):
+            monkeypatch.setattr(
+                api_module,
+                "_dt_state",
+                {"rooms": [], "positions": {}, "interactions": []},
+            )
+            token = _register_and_get_csrf(started_client, "dtinteract")
+    
+            resp = started_client.post(
+                "/api/v1/agent-config/digital-twin/interact",
+                json={
+                    "from": "planner",
+                    "to": "builder",
+                    "type": "handoff",
+                    "content": "ship it",
+                },
+                headers={"x-csrf-token": token},
+            )
+    
+            assert resp.status_code == 200
+            payload = resp.json()
+            assert payload["from"] == "planner"
+            assert payload["to"] == "builder"
+            assert payload["content"] == "ship it"
+    
+    
+    class TestAgentTeamEvolutionHandlerIntegration:
+        def test_auto_triage_validates_top_n_bounds(self, started_client):
+            token = _register_and_get_csrf(started_client, "autotriage")
+    
+            resp = started_client.post(
+                "/api/v1/agent-teams/evolution/auto-triage",
+                json={"team_id": "build_system", "top_n": 11},
+                headers={"x-csrf-token": token},
+            )
+    
+            assert resp.status_code == 422
+    
+        def test_dataset_generate_validates_count_bounds(self, started_client):
+            token = _register_and_get_csrf(started_client, "datasetgen")
+    
+            resp = started_client.post(
+                "/api/v1/agent-teams/evolution/dataset/generate",
+                json={"skill_id": "skill-a", "team_id": "build_system", "count": 31},
+                headers={"x-csrf-token": token},
+            )
+    
+            assert resp.status_code == 422
+    
+    ```
+    
+    ### 文件: `src/backend/tests/test_api_pagination.py`
+    ```py
+    # -*- coding: utf-8 -*-
+    """Pagination regressions for agent-config list endpoints."""
+    
+    from __future__ import annotations
+    
+    from pathlib import Path
+    
+    import pytest
+    
+    from agents import api as api_module
+    from agents.models import AgentProfile, ModelConfig
+    from agents.skill_library import init_skill_library
+    from agents.skill_registry import SkillRegistry
+    from agents.task_engine import AgentTask, TaskEngine
+    from agents.task_store import TaskStore
+    from agents.team_manager import TeamManager
+    from agents.team_store import TeamStore
+    from agents.tool_registry import ToolRegistry
+    
+    
+    @pytest.fixture
+    def paginated_api_state(monkeypatch, tmp_path):
+        store = TeamStore(path=tmp_path / "teams.json")
+        team_manager = TeamManager(store=store)
+    
+        tool_registry = ToolRegistry()
+        tool_registry.load_defaults()
+    
+        skill_registry = SkillRegistry()
+        skill_registry.load_defaults()
+        init_skill_library(team_manager=team_manager, skill_registry=skill_registry)
+    
+        monkeypatch.setattr(api_module, "_team_manager", team_manager)
+        monkeypatch.setattr(api_module, "_tool_registry", tool_registry)
+        monkeypatch.setattr(api_module, "_skill_registry", skill_registry)
+        monkeypatch.setattr(api_module, "_sessions", {})
+        monkeypatch.setattr(api_module, "_delegated_tasks", [])
+    
+        task_engine = TaskEngine(store=TaskStore(base_dir=Path(tmp_path) / "tasks"))
+        monkeypatch.setattr(api_module, "get_task_engine", lambda: task_engine)
+    
+        team = team_manager.create_team(name="分页测试团队", team_id="team-page")
+        for index in range(5):
+            team.add_agent(
+                AgentProfile(
+                    agent_id=f"agent-{index}",
+                    name=f"Agent {index}",
+                    role="developer",
+                )
+            )
+        team.add_model(
+            ModelConfig(
+                model_id="model-a",
+                provider="openai",
+                name="gpt-test",
+                max_tokens=4096,
+                temperature=0.2,
+            )
+        )
+        team.add_model(
+            ModelConfig(
+                model_id="model-b",
+                provider="deepseek",
+                name="deepseek-chat",
+                max_tokens=8192,
+                temperature=0.7,
+            )
+        )
+        for tool in tool_registry.list_all()[:5]:
+            team.add_tool(tool)
+        for skill in skill_registry.list_all()[:4]:
+            team.add_skill(skill)
+        team_manager._persist()
+    
+        for index in range(4):
+            task = AgentTask(
+                task_id=f"task-{index}",
+                agent_id="agent-0",
+                team_id=team.team_id,
+                title=f"Task {index}",
+                description="pagination test",
+                priority=2,
+       
+  ...(截断)
+  
+  ## ⚠️ 最重要的规则
+  系统已自动预加载项目文件结构和相关源文件（见上方 📂 项目上下文）。
+  **你必须只引用上方提供的实际文件**，严禁凭想象编造文件名或路径。
+  如果上下文中没有某个文件，说明该文件不存在。
+  
+  ## 要求
+  1. 仔细阅读上方提供的项目文件结构和源文件内容
+  2. 根据**实际存在的文件**分析哪些需要修改
+  3. 列出需要修改的文件的**完整路径** (必须是项目上下文中出现的路径)
+  4. 分析实现方案的可行性
+  5. 引用具体代码行号说明修改点
+  
+  项目根目录: /Users/panglaohu/Downloads/DoubleBoatClawSystem
+  后端: src/backend/ (Python FastAPI)
+  前端: src/frontend/ (HTML + JS)
+  
+  
+  项目根目录: /Users/panglaohu/Downloads/AgentsGroup2026
+  后端: src/backend/ (Python FastAPI)
+  前端: src/frontend/ (HTML + JS)
+  
+────────────────────────────────────────────────────────────
+⚡ 使用 DeepSeek V4 直连 (64K 输出, 流式)...
+
+🔗 API: api.deepseek.com | 模型: deepseek-v4-flash
+────────────────────────────────────────────────────────────
+
+
+
+⚠️ LLM 执行降级：API 错误: 401 Authorization Required {"error":{"message":"Authentication Fails, Your api key: ****8cba is invalid","type":"authentication_error","param":null,"code":"invalid_request_error"}}
+系统已生成确定性任务草稿，供人工 review / 后续真实模型补跑。
+
+## 降级执行草稿
+- 先确认变更目标、风险、依赖和验收指标。
+- 将任务拆成 plan / dry-run / review / apply / rollback / observe 六段。
+- 所有生产动作必须保留审计日志、回滚条件和成本/合规检查。
+- 对 OpenSearch/ElasticSearch 伸缩类任务，必须覆盖容量基线、分片重平衡、CloudWatch/OpenSearch 指标门禁、RI/Savings Plan 影响和北美数据驻留。
+
+## 原始任务摘要
+你是 AgentsGroup2026 系统的 Researcher (researcher)。
+请执行以下开发任务:
+
+你是技术研究员。请对以下任务进行技术调研:
+
+## 任务
+LLM连通性测试任务
+测试 _check_task_runtime_ready 是否能读到 API key
+
+## 📂 项目上下文 (系统自动预加载)
+
+### 项目文件结构 (src/ 目录)
+```
+src/frontend/Agent-digital-twin.html
+src/frontend/agent-team-config.html
+src/frontend/cost-dashboard.html
+src/frontend/datacenter-ratchet-evolution.html
+src/frontend/digital-twin-cli.html
+src/frontend/extraction-pipeline.html
+src/frontend/index.html
+src/frontend/login.html
+src/frontend/plaza.html
+src/frontend/sandbox-twin.html
+src/frontend/skill-extract.html
+src/frontend/system-evolution.html
+src/frontend/tasks.html
+src/frontend/css/agent-team-config.css
+src/frontend/css/base.css
+src/frontend/css/components.css
+src/frontend/css/cost-dashboard.css
+src/frontend/css/openbridge-theme.css
+src/frontend/css/sandbox-twin.css
+src/frontend/css/skill-extract-timeline.css
+src/frontend/css/skill-extract.css
+src/frontend/css/tasks-ws.css
+src/frontend/css/theme.css
+src/frontend/css/topbar-ws.css
+src/frontend/css/variables.css
+src/frontend/css/ws-theme-bridge.css
+src/frontend/js/ag-context.js
+src/frontend/js/agent-detail.js
+src/frontend/js/agent-team-config.js
+src/frontend/js/api.js
+src/frontend/js/cost-dashbo

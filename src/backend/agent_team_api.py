@@ -1,0 +1,1077 @@
+# -*- coding: utf-8 -*-
+"""
+Agent Team API Routes - 双团队管理 REST API
+
+提供构建团队 & 执行团队的状态查询、KPI 考核、
+任务分配、报告查询等端点。挂载至 FastAPI 的 router。
+"""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Any, Dict, List, Optional
+
+router = APIRouter(prefix="/api/v1/agent-teams", tags=["Agent Teams"])
+
+
+# ---------------------------------------------------------------------------
+# 全局引用（在 main.py startup 时注入）
+# ---------------------------------------------------------------------------
+_build_team = None
+_execution_team = None
+_scheduler = None
+_evolution_engine = None
+
+
+def set_teams(build_team, execution_team, scheduler, evolution_engine=None):
+    """在应用启动时由 main.py 调用，注入团队实例."""
+    global _build_team, _execution_team, _scheduler, _evolution_engine
+    _build_team = build_team
+    _execution_team = execution_team
+    _scheduler = scheduler
+    _evolution_engine = evolution_engine
+
+
+# ---------------------------------------------------------------------------
+# Request / Response Models
+# ---------------------------------------------------------------------------
+
+class TaskAssignment(BaseModel):
+    agent_id: str
+    task: str
+
+class FeedbackSubmission(BaseModel):
+    category: str = "optimization"
+    severity: str = "medium"
+    title: str
+    detail: str
+
+
+# ---------------------------------------------------------------------------
+# Scheduler
+# ---------------------------------------------------------------------------
+
+import time as _time
+
+
+class AgentScheduler:
+    """轻量级调度器，提供运行状态、tick 计数、报告生成等基本能力。
+
+    在 main.py startup 时自动创建并注入，确保前端团队概览的
+    「调度器」卡片显示「运行中」而非「已停止」。
+    """
+
+    def __init__(self) -> None:
+        self._started_at = _time.time()
+        self._tick_count: int = 0
+        self._last_tick_at: float = 0.0
+
+    def get_status(self) -> Dict[str, Any]:
+        return {
+            "running": True,
+            "tick_count": self._tick_count,
+            "uptime_seconds": _time.time() - self._started_at,
+            "last_tick_at": self._last_tick_at if self._last_tick_at else None,
+        }
+
+    def tick_once(self) -> Dict[str, Any]:
+        """手动触发一次 tick（供调试/手动推进）."""
+        self._tick_count += 1
+        self._last_tick_at = _time.time()
+        # 每次 tick 尝试驱动 evolution engine 的审查周期（如果存在）
+        try:
+            global _evolution_engine
+            if _evolution_engine is not None:
+                _evolution_engine.audit()
+        except Exception:
+            pass
+        return {"tick": self._tick_count, "ok": True}
+
+    def generate_report_now(self) -> Dict[str, Any]:
+        return {
+            "status": self.get_status(),
+            "summary": (f"调度器已运行 {self.get_status()['uptime_seconds']:.0f} 秒，"
+                        f"累计 {self._tick_count} 次 tick"),
+        }
+
+
+@router.get("/scheduler/status")
+async def scheduler_status():
+    if not _scheduler:
+        raise HTTPException(503, "Scheduler not initialized")
+    return _scheduler.get_status()
+
+
+@router.post("/scheduler/report")
+async def scheduler_generate_report():
+    if not _scheduler:
+        raise HTTPException(503, "Scheduler not initialized")
+    return _scheduler.generate_report_now()
+
+
+@router.post("/scheduler/tick")
+async def scheduler_tick_once():
+    """手动触发一次调度 tick (调试用)."""
+    if not _scheduler:
+        raise HTTPException(503, "Scheduler not initialized")
+    return _scheduler.tick_once()
+
+
+# ---------------------------------------------------------------------------
+# Build Team
+# ---------------------------------------------------------------------------
+
+@router.get("/build/status")
+async def build_team_status():
+    if not _build_team:
+        raise HTTPException(503, "Build team not initialized")
+    return _build_team.get_status()
+
+
+@router.get("/build/kpis")
+async def build_team_kpis():
+    if not _build_team:
+        raise HTTPException(503, "Build team not initialized")
+    return _build_team.get_agent_kpis()
+
+
+@router.get("/build/agents/{agent_id}")
+async def build_agent_detail(agent_id: str):
+    if not _build_team:
+        raise HTTPException(503, "Build team not initialized")
+    agent = _build_team.agents.get(agent_id)
+    if not agent:
+        raise HTTPException(404, f"Agent '{agent_id}' not found")
+    return agent.to_dict()
+
+
+@router.post("/build/assign")
+async def build_assign_task(body: TaskAssignment):
+    if not _build_team:
+        raise HTTPException(503, "Build team not initialized")
+    ok = _build_team.assign_task(body.agent_id, body.task)
+    if not ok:
+        raise HTTPException(404, f"Agent '{body.agent_id}' not found")
+    return {"status": "assigned", "agent_id": body.agent_id, "task": body.task}
+
+
+@router.get("/build/reports")
+async def build_reports(limit: int = 10):
+    if not _build_team:
+        raise HTTPException(503, "Build team not initialized")
+    reports = _build_team.hourly_reports[-limit:]
+    return [r.to_dict() for r in reports]
+
+
+@router.get("/build/issues")
+async def build_issues():
+    if not _build_team:
+        raise HTTPException(503, "Build team not initialized")
+    return _build_team.issue_backlog
+
+
+# ---------------------------------------------------------------------------
+# Execution Team
+# ---------------------------------------------------------------------------
+
+@router.get("/execution/status")
+async def execution_team_status():
+    if not _execution_team:
+        raise HTTPException(503, "Execution team not initialized")
+    return _execution_team.get_status()
+
+
+@router.get("/execution/agents/{agent_id}")
+async def execution_agent_detail(agent_id: str):
+    if not _execution_team:
+        raise HTTPException(503, "Execution team not initialized")
+    agent = _execution_team.agents.get(agent_id)
+    if not agent:
+        raise HTTPException(404, f"Agent '{agent_id}' not found")
+    return agent.to_dict()
+
+
+@router.get("/execution/reports")
+async def execution_reports(limit: int = 10):
+    if not _execution_team:
+        raise HTTPException(503, "Execution team not initialized")
+    reports = _execution_team.execution_reports[-limit:]
+    return [r.to_dict() for r in reports]
+
+
+@router.get("/execution/feedback")
+async def execution_feedback():
+    if not _execution_team:
+        raise HTTPException(503, "Execution team not initialized")
+    return [item.to_dict() for item in _execution_team.feedback_queue]
+
+
+@router.post("/execution/feedback")
+async def submit_feedback(body: FeedbackSubmission):
+    if not _execution_team:
+        raise HTTPException(503, "Execution team not initialized")
+    item = _execution_team.submit_feedback(
+        category=body.category,
+        severity=body.severity,
+        title=body.title,
+        detail=body.detail,
+    )
+    return item.to_dict()
+
+
+# ---------------------------------------------------------------------------
+# Combined
+# ---------------------------------------------------------------------------
+
+@router.get("/overview")
+async def teams_overview(team_id: Optional[str] = None):
+    """一站式获取双团队全局概览."""
+    result: Dict[str, Any] = {}
+    if _build_team:
+        bs = _build_team.get_status()
+        result["build_team"] = {
+            "health": bs["health"],
+            "agent_count": bs["agent_count"],
+            "metrics": bs["metrics"],
+        }
+    if _execution_team:
+        es = _execution_team.get_status()
+        result["execution_team"] = {
+            "health": es["health"],
+            "agent_count": es["agent_count"],
+            "metrics": es["metrics"],
+        }
+    if _scheduler:
+        result["scheduler"] = _scheduler.get_status()
+    if _evolution_engine:
+        result["evolution"] = {
+            **_evolution_engine.get_status(),
+            "compliance_rating": _serialize_compliance_rating(),
+        }
+    if team_id:
+        result["current_team"] = _serialize_current_team(team_id)
+    return result
+
+
+def _serialize_current_team(team_id: str) -> Optional[Dict[str, Any]]:
+    try:
+        from .agents.api import _summarize_team_tasks, _team_manager
+    except ImportError:
+        from agents.api import _summarize_team_tasks, _team_manager
+
+    if _team_manager is None:
+        return None
+
+    team = _team_manager.get_team(team_id)
+    if team is None:
+        return None
+
+    return {
+        **team.to_dict(),
+        "tasks": _summarize_team_tasks(team_id),
+    }
+
+
+# ---------------------------------------------------------------------------
+# System Evolution (自我演进引擎)
+# ---------------------------------------------------------------------------
+
+@router.get("/evolution/status")
+async def evolution_status():
+    """获取自我演进引擎状态。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    status = _evolution_engine.get_status()
+    return {
+        "status": "initialized" if status.get("initialized") else "not_initialized",
+        **status,
+    }
+
+
+@router.get("/evolution/summary")
+async def evolution_summary():
+    """获取演进项汇总。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.get_evolution_summary()
+
+
+@router.get("/evolution/items")
+async def evolution_items(status: Optional[str] = None):
+    """获取演进项列表，可按状态过滤。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.get_evolution_items(status=status)
+
+
+@router.get("/evolution/rules")
+async def evolution_rules():
+    """获取审查规则列表。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return [r.to_dict() for r in _evolution_engine.audit_rules]
+
+
+@router.post("/evolution/audit")
+async def evolution_run_audit():
+    """手动触发一次审查。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.run_full_audit()
+
+
+@router.post("/evolution/cycle")
+async def evolution_run_cycle():
+    """运行完整演进周期（审查→派发→验证→关闭）。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.run_evolution_cycle()
+
+
+@router.post("/evolution/dispatch")
+async def evolution_dispatch():
+    """派发所有待处理演进项给 Build 团队。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.dispatch_all_pending()
+
+
+@router.post("/evolution/verify")
+async def evolution_verify():
+    """验证所有待验证项。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.verify_all_pending()
+
+
+@router.get("/evolution/items/{item_id}")
+async def evolution_item_detail(item_id: str):
+    """获取单个演进项详情。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    item = _evolution_engine.evolution_items.get(item_id)
+    if not item:
+        raise HTTPException(404, f"Item '{item_id}' not found")
+    return item.to_dict()
+
+
+@router.post("/evolution/items/{item_id}/progress")
+async def evolution_mark_progress(item_id: str):
+    """标记演进项为进行中。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    ok = _evolution_engine.mark_in_progress(item_id)
+    if not ok:
+        raise HTTPException(404, f"Item '{item_id}' not found")
+    return {"status": "ok", "item_id": item_id, "new_status": "in_progress"}
+
+
+@router.post("/evolution/items/{item_id}/complete")
+async def evolution_mark_complete(item_id: str):
+    """标记演进项构建完成，进入待验证。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    ok = _evolution_engine.mark_build_complete(item_id)
+    if not ok:
+        raise HTTPException(404, f"Item '{item_id}' not found")
+    return {"status": "ok", "item_id": item_id, "new_status": "verify_pending"}
+
+
+@router.post("/evolution/close-verified")
+async def evolution_close_verified():
+    """关闭所有已验证通过的演进项。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    closed = _evolution_engine.close_verified()
+    return {"closed": closed, "count": len(closed)}
+
+
+@router.post("/evolution/close")
+async def evolution_close():
+    """关闭所有已验证通过的演进项 (close-verified 别名)。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    closed = _evolution_engine.close_verified()
+    return {"closed": closed, "count": len(closed)}
+
+
+@router.get("/evolution/history")
+async def evolution_audit_history():
+    """获取审查历史记录。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    raw = _evolution_engine.get_audit_history()
+    # Normalize field names for frontend (expects timestamp, total)
+    result = []
+    for h in raw:
+        entry = dict(h)
+        entry.setdefault("timestamp", entry.pop("time", None))
+        entry.setdefault("total", (entry.get("passed") or 0) + (entry.get("failed") or 0) + (entry.get("skipped") or 0))
+        result.append(entry)
+    return result
+
+
+@router.get("/evolution/analytics")
+async def evolution_analytics():
+    """获取演进分析数据 (域覆盖、严重度分布、趋势)。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    summary = _evolution_engine.get_evolution_summary()
+    history = _evolution_engine.get_audit_history()
+    status = _evolution_engine.get_status()
+
+    return {
+        "summary": summary,
+        "history": history,
+        "stats": status.get("stats", {}),
+        "items_by_status": status.get("items_by_status", {}),
+        "rules_count": status.get("audit_rules_count", 0),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: 业界标准化改进 API
+# ---------------------------------------------------------------------------
+
+@router.get("/evolution/compliance-rating")
+async def evolution_compliance_rating():
+    """获取 DNV CII 风格 A~E 合规评级。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _serialize_compliance_rating()
+
+
+def _serialize_compliance_rating() -> Dict[str, Any]:
+    data = _evolution_engine.get_compliance_rating()
+    data["grade"] = data.get("rating", "?")
+    data["description"] = data.get("rating_label", "")
+    escalation = _evolution_engine.get_escalation_status()
+    data["escalation_tier"] = "corrective" if escalation.get("escalated_count", 0) > 0 else "normal"
+    return data
+
+
+@router.post("/evolution/compliance-rating/calculate")
+async def evolution_calculate_rating():
+    """重新计算合规评级 (运行快速审查)。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.calculate_compliance_rating()
+
+
+@router.get("/evolution/checklist")
+async def evolution_checklist(level: Optional[str] = None):
+    """获取 ClassNK 双层自查清单 (company/ship)。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.get_checklist(level=level)
+
+
+@router.get("/evolution/zones")
+async def evolution_zones():
+    """获取所有合规区域。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.get_all_zones()
+
+
+@router.get("/evolution/zones/active")
+async def evolution_active_zones():
+    """获取当前激活的合规区域。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.get_active_zones()
+
+
+@router.post("/evolution/zones/update-position")
+async def evolution_update_position(lat: float = 0.0, lon: float = 0.0):
+    """更新船舶位置，自动检测合规区域进入/离开。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.update_vessel_position(lat, lon)
+
+
+@router.get("/evolution/escalation")
+async def evolution_escalation():
+    """获取失败升级状态 (DNV SEEMP Part III 风格)。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.get_escalation_status()
+
+
+@router.get("/evolution/trend")
+async def evolution_trend():
+    """获取合规评级趋势分析。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    data = _evolution_engine.get_trend_analysis()
+    # Frontend expects improvement_rate
+    delta = data.get("trend_delta", 0.0)
+    data["improvement_rate"] = round(delta, 1)
+    return data
+
+
+@router.get("/evolution/monitoring")
+async def evolution_monitoring():
+    """获取连续监控状态。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    data = _evolution_engine.get_monitoring_status()
+    # Frontend expects 'active' bool and 'last_check' timestamp
+    data["active"] = True
+    if _evolution_engine._last_monitoring_time:
+        from datetime import datetime as _dt
+        data["last_check"] = _dt.fromtimestamp(_evolution_engine._last_monitoring_time).isoformat()
+    else:
+        data["last_check"] = None
+    return data
+
+
+@router.get("/evolution/audit-trail")
+async def evolution_audit_trail(event_type: Optional[str] = None, limit: int = 50):
+    """获取审计轨迹日志。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    return _evolution_engine.get_audit_trail(event_type=event_type, limit=limit)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 演化优化 API (Phase 1-5: Qwen 反思式演化)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/evolution/optimize")
+async def evolution_optimize(body: Dict[str, Any]):
+    """启动技能/规则/提示词优化 (Phase 1-3).
+
+    Body: {target_type: "skill"|"rule"|"prompt", target_id, team_id, iterations?}
+    """
+    from agents.evolution.optimizer import optimize_skill, optimize_rule_description, optimize_prompt_section
+    from agents.skill_library import get_skill_library
+
+    target_type = body.get("target_type", "skill")
+    target_id = body.get("target_id", "")
+    team_id = body.get("team_id", "build_system")
+    iterations = min(body.get("iterations", 5), 10)  # Cap at 10
+
+    if not target_id:
+        raise HTTPException(400, "target_id required")
+
+    if target_type == "skill":
+        lib = get_skill_library()
+        if not lib:
+            raise HTTPException(500, "Skill library not initialized")
+        skill = lib._find_skill(team_id, target_id)
+        if not skill:
+            raise HTTPException(404, f"Skill {target_id} not found")
+
+        import asyncio
+        run = await optimize_skill(
+            team_id=team_id,
+            skill_id=target_id,
+            skill_name=skill.name,
+            instructions=skill.instructions,
+            tags=skill.tags if hasattr(skill, 'tags') else [],
+            iterations=iterations,
+        )
+        return run.to_dict()
+
+    elif target_type == "rule":
+        if not _evolution_engine:
+            raise HTTPException(404, "Evolution engine not registered")
+        rules = _evolution_engine.get_rules()
+        rule = next((r for r in rules if r.get("id") == target_id), None)
+        if not rule:
+            raise HTTPException(404, f"Rule {target_id} not found")
+
+        run = await optimize_rule_description(
+            rule_id=target_id,
+            current_title=rule.get("title", ""),
+            current_description=rule.get("description", ""),
+            iterations=iterations,
+        )
+        return run.to_dict()
+
+    elif target_type == "prompt":
+        content = body.get("content", "")
+        if not content:
+            raise HTTPException(400, "content required for prompt optimization")
+        run = await optimize_prompt_section(
+            section_name=target_id,
+            current_content=content,
+            team_id=team_id,
+            iterations=iterations,
+        )
+        return run.to_dict()
+
+    raise HTTPException(400, f"Unknown target_type: {target_type}")
+
+
+@router.get("/evolution/optimize/runs")
+async def evolution_optimize_runs(target_type: Optional[str] = None, limit: int = 20):
+    """列出优化运行记录."""
+    from agents.evolution.optimizer import list_runs
+    return list_runs(target_type=target_type, limit=limit)
+
+
+@router.get("/evolution/optimize/{run_id}")
+async def evolution_optimize_result(run_id: str):
+    """获取单次优化运行的详细结果."""
+    from agents.evolution.optimizer import OptimizationRun
+    run = OptimizationRun.load(run_id)
+    if not run:
+        raise HTTPException(404, f"Run {run_id} not found")
+    return run.to_dict()
+
+
+@router.get("/evolution/optimize/{run_id}/compare")
+async def evolution_optimize_compare(run_id: str):
+    """获取 baseline vs evolved 对比视图."""
+    from agents.evolution.optimizer import OptimizationRun
+    from agents.evolution.comparator import compare_results
+    run = OptimizationRun.load(run_id)
+    if not run:
+        raise HTTPException(404, f"Run {run_id} not found")
+    return compare_results(
+        original_instructions=run.original_instructions,
+        evolved_instructions=run.best_instructions,
+        baseline_score=run.baseline_score,
+        evolved_score=run.best_score,
+        iteration_log=run.iteration_log,
+    )
+
+
+@router.post("/evolution/optimize/{run_id}/approve")
+async def evolution_optimize_approve(run_id: str):
+    """批准演化结果 — 应用到技能并走棘轮锁定.
+
+    照搬 Hermes: Deploy via PR (ratchet lock).
+    """
+    from agents.evolution.optimizer import OptimizationRun
+    from agents.skill_evolver import get_skill_evolver
+
+    run = OptimizationRun.load(run_id)
+    if not run:
+        raise HTTPException(404, f"Run {run_id} not found")
+    if not run.improved:
+        raise HTTPException(400, "Run did not produce improvement (delta < 5%)")
+    if run.target_type != "skill":
+        raise HTTPException(400, "Only skill approval implemented")
+
+    evolver = get_skill_evolver()
+    result = evolver.apply_evolution(
+        team_id=run.team_id,
+        skill_id=run.target_id,
+        new_instructions=run.best_instructions,
+    )
+    if result.get("error"):
+        raise HTTPException(500, result["error"])
+
+    return {
+        "status": "approved_and_applied",
+        "skill_id": run.target_id,
+        "new_version": result.get("version"),
+        "score_improvement": f"+{run.score_delta * 100:.1f}%",
+    }
+
+
+@router.post("/evolution/fitness/skill/{skill_id}")
+async def evolution_skill_fitness(skill_id: str, team_id: str = "build_system"):
+    """评估单个技能的 fitness 分数 (Phase 1 核心)."""
+    from agents.evolution.dataset_builder import build_full_dataset
+    from agents.evolution.fitness import evaluate_skill
+    from agents.skill_library import get_skill_library
+
+    lib = get_skill_library()
+    if not lib:
+        raise HTTPException(500, "Skill library not initialized")
+    skill = lib._find_skill(team_id, skill_id)
+    if not skill:
+        raise HTTPException(404, f"Skill {skill_id} not found")
+
+    dataset = await build_full_dataset(
+        skill_name=skill.name,
+        skill_id=skill_id,
+        instructions=skill.instructions,
+        tags=skill.tags if hasattr(skill, 'tags') else [],
+        synthetic_count=8,
+    )
+
+    if len(dataset.val) < 2:
+        raise HTTPException(500, "Failed to generate sufficient eval examples")
+
+    report = await evaluate_skill(
+        skill_id=skill_id,
+        skill_name=skill.name,
+        instructions=skill.instructions,
+        eval_examples=dataset.val,
+    )
+    return report.to_dict()
+
+
+@router.post("/evolution/auto-triage")
+async def evolution_auto_triage(body: Dict[str, Any] = None):
+    """自动诊断 — 识别最需要优化的技能 (Phase 5)."""
+    from agents.evolution.auto_triage import run_auto_triage
+    body = body or {}
+    team_id = body.get("team_id", "build_system")
+    top_n = min(body.get("top_n", 5), 10)
+    return await run_auto_triage(team_id=team_id, top_n=top_n)
+
+
+@router.post("/evolution/dataset/generate")
+async def evolution_generate_dataset(body: Dict[str, Any]):
+    """为指定技能生成评估数据集."""
+    from agents.evolution.dataset_builder import build_full_dataset
+    from agents.skill_library import get_skill_library
+
+    skill_id = body.get("skill_id", "")
+    team_id = body.get("team_id", "build_system")
+    count = min(body.get("count", 15), 30)
+
+    if not skill_id:
+        raise HTTPException(400, "skill_id required")
+
+    lib = get_skill_library()
+    if not lib:
+        raise HTTPException(500, "Skill library not initialized")
+    skill = lib._find_skill(team_id, skill_id)
+    if not skill:
+        raise HTTPException(404, f"Skill {skill_id} not found")
+
+    dataset = await build_full_dataset(
+        skill_name=skill.name,
+        skill_id=skill_id,
+        instructions=skill.instructions,
+        tags=skill.tags if hasattr(skill, 'tags') else [],
+        synthetic_count=count,
+    )
+    dataset.save("skills")
+    return dataset.to_dict()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 交互式演化步骤 API (Step-by-Step)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _get_ds_dir():
+    """Get the evolution datasets directory path."""
+    from pathlib import Path
+    ds_dir = Path(__file__).resolve().parent / "agents" / ".." / ".." / "storage" / "evolution_datasets" / "skills"
+    ds_dir = ds_dir.resolve()
+    ds_dir.mkdir(parents=True, exist_ok=True)
+    return ds_dir
+
+
+def _load_dataset(dataset_id: str):
+    """Load an EvalDataset by its ID."""
+    from agents.evolution.dataset_builder import EvalDataset
+    ds_dir = _get_ds_dir()
+    found = list(ds_dir.glob(f"*_{dataset_id}.json"))
+    if not found:
+        raise HTTPException(404, f"Dataset {dataset_id} not found")
+    return EvalDataset.load(str(found[0]))
+
+@router.post("/evolution/dataset/manual")
+async def evolution_dataset_manual(body: Dict[str, Any]):
+    """手动添加评估用例到数据集."""
+    from agents.evolution.dataset_builder import EvalDataset
+
+    dataset_id = body.get("dataset_id", "")
+    skill_id = body.get("skill_id", "")
+    examples = body.get("examples", [])  # [{task_input, rubric}]
+
+    if not examples:
+        raise HTTPException(400, "examples required")
+
+    # Load existing or create new
+    if dataset_id:
+        ds = _load_dataset(dataset_id)
+    else:
+        if not skill_id:
+            raise HTTPException(400, "skill_id required when creating new dataset")
+        ds = EvalDataset(skill_id=skill_id, skill_name=body.get("skill_name", skill_id))
+
+    # Add examples
+    for ex in examples:
+        if isinstance(ex, dict) and ex.get("task_input") and ex.get("rubric"):
+            ds.examples.append({"task_input": str(ex["task_input"]), "rubric": str(ex["rubric"])})
+
+    ds.split()
+    ds.save("skills")
+    return ds.to_dict()
+
+
+@router.post("/evolution/dataset/import-kb")
+async def evolution_dataset_import_kb(body: Dict[str, Any]):
+    """从知识库抽取评估用例."""
+    from agents.evolution.dataset_builder import EvalDataset, mine_knowledge_base
+
+    skill_id = body.get("skill_id", "")
+    skill_name = body.get("skill_name", skill_id)
+    dataset_id = body.get("dataset_id", "")
+    max_examples = min(body.get("max_examples", 20), 50)
+
+    if not skill_id:
+        raise HTTPException(400, "skill_id required")
+
+    mined = mine_knowledge_base(skill_id, skill_name, max_examples=max_examples)
+
+    if dataset_id:
+        try:
+            ds = _load_dataset(dataset_id)
+        except HTTPException:
+            ds = EvalDataset(skill_id=skill_id, skill_name=skill_name)
+    else:
+        ds = EvalDataset(skill_id=skill_id, skill_name=skill_name)
+
+    for ex in mined:
+        ds.examples.append({"task_input": ex["task_input"], "rubric": ex["rubric"]})
+
+    ds.split()
+    ds.save("skills")
+    return {"dataset": ds.to_dict(), "imported_count": len(mined)}
+
+
+@router.get("/evolution/dataset/{dataset_id}")
+async def evolution_get_dataset(dataset_id: str):
+    """获取数据集详情."""
+    ds = _load_dataset(dataset_id)
+    return ds.to_dict()
+
+
+@router.put("/evolution/dataset/{dataset_id}/examples")
+async def evolution_update_dataset_examples(dataset_id: str, body: Dict[str, Any]):
+    """编辑数据集中的用例."""
+    from agents.evolution.dataset_builder import EvalDataset
+
+    ds = _load_dataset(dataset_id)
+    action = body.get("action", "replace_all")  # replace_all, delete, update
+
+    if action == "replace_all":
+        ds.examples = [ex for ex in body.get("examples", []) if ex.get("task_input") and ex.get("rubric")]
+    elif action == "delete":
+        indices = sorted(body.get("indices", []), reverse=True)
+        for idx in indices:
+            if 0 <= idx < len(ds.examples):
+                ds.examples.pop(idx)
+    elif action == "update":
+        idx = body.get("index", -1)
+        example = body.get("example", {})
+        if 0 <= idx < len(ds.examples) and example.get("task_input") and example.get("rubric"):
+            ds.examples[idx] = {"task_input": example["task_input"], "rubric": example["rubric"]}
+
+    ds.split()
+    ds.save("skills")
+    return ds.to_dict()
+
+
+@router.post("/evolution/step/baseline")
+async def evolution_step_baseline(body: Dict[str, Any]):
+    """步骤2: 在已有数据集上评估 baseline."""
+    from agents.evolution.fitness import evaluate_skill
+    from agents.skill_library import get_skill_library
+
+    skill_id = body.get("skill_id", "")
+    team_id = body.get("team_id", "build_system")
+    dataset_id = body.get("dataset_id", "")
+
+    if not skill_id or not dataset_id:
+        raise HTTPException(400, "skill_id and dataset_id required")
+
+    lib = get_skill_library()
+    if not lib:
+        raise HTTPException(500, "Skill library not initialized")
+    skill = lib._find_skill(team_id, skill_id)
+    if not skill:
+        raise HTTPException(404, f"Skill {skill_id} not found")
+
+    ds = _load_dataset(dataset_id)
+
+    eval_set = ds.val if ds.val else ds.examples[:5]
+    if len(eval_set) < 1:
+        raise HTTPException(400, "Dataset too small for evaluation")
+
+    report = await evaluate_skill(
+        skill_id=skill_id,
+        skill_name=skill.name,
+        instructions=skill.instructions,
+        eval_examples=eval_set,
+    )
+    return {**report.to_dict(), "dataset_id": dataset_id, "eval_count": len(eval_set)}
+
+
+@router.post("/evolution/step/reflect")
+async def evolution_step_reflect(body: Dict[str, Any]):
+    """步骤3: 反思分析 — 可传入用户补充的 hints."""
+    from agents.evolution.mutator import reflect_on_failures
+    from agents.skill_library import get_skill_library
+
+    skill_id = body.get("skill_id", "")
+    team_id = body.get("team_id", "build_system")
+    failures = body.get("failures", [])  # [{task_input, rubric, composite, reasoning}]
+    user_hints = body.get("user_hints", "")  # 用户补充的分析方向
+
+    if not skill_id:
+        raise HTTPException(400, "skill_id required")
+
+    lib = get_skill_library()
+    if not lib:
+        raise HTTPException(500, "Skill library not initialized")
+    skill = lib._find_skill(team_id, skill_id)
+    if not skill:
+        raise HTTPException(404, f"Skill {skill_id} not found")
+
+    instructions = skill.instructions
+    if user_hints:
+        # Inject user hints into the failures context
+        failures = failures or []
+        failures.append({
+            "task_input": f"[用户反馈] {user_hints}",
+            "rubric": "用户指出的问题方向",
+            "composite": 0.0,
+            "reasoning": user_hints,
+        })
+
+    if not failures:
+        raise HTTPException(400, "failures required (from baseline evaluation)")
+
+    reflection = await reflect_on_failures(instructions, failures)
+    return {
+        "root_causes": reflection.root_causes,
+        "specific_defects": reflection.specific_defects,
+        "improvement_directions": reflection.improvement_directions,
+    }
+
+
+@router.post("/evolution/step/mutate")
+async def evolution_step_mutate(body: Dict[str, Any]):
+    """步骤4: 生成变异候选."""
+    from agents.evolution.mutator import ReflectionResult, generate_candidates
+    from agents.skill_library import get_skill_library
+
+    skill_id = body.get("skill_id", "")
+    team_id = body.get("team_id", "build_system")
+    reflection_data = body.get("reflection", {})  # {root_causes, specific_defects, improvement_directions}
+
+    if not skill_id or not reflection_data:
+        raise HTTPException(400, "skill_id and reflection required")
+
+    lib = get_skill_library()
+    if not lib:
+        raise HTTPException(500, "Skill library not initialized")
+    skill = lib._find_skill(team_id, skill_id)
+    if not skill:
+        raise HTTPException(404, f"Skill {skill_id} not found")
+
+    # Build ReflectionResult from data
+    reflection = ReflectionResult()
+    reflection.root_causes = reflection_data.get("root_causes", [])
+    reflection.specific_defects = reflection_data.get("specific_defects", [])
+    reflection.improvement_directions = reflection_data.get("improvement_directions", [])
+
+    candidates = await generate_candidates(skill.instructions, reflection)
+    return {
+        "candidates": [
+            {"strategy": c.strategy, "instructions": c.instructions, "summary": c.summary if hasattr(c, 'summary') else ""}
+            for c in candidates
+        ]
+    }
+
+
+@router.post("/evolution/step/evaluate-candidate")
+async def evolution_step_evaluate_candidate(body: Dict[str, Any]):
+    """步骤4b: 评估单个候选."""
+    from agents.evolution.constraints import validate_all
+    from agents.evolution.fitness import apply_length_penalty, evaluate_skill
+    from agents.skill_library import get_skill_library
+
+    skill_id = body.get("skill_id", "")
+    team_id = body.get("team_id", "build_system")
+    dataset_id = body.get("dataset_id", "")
+    candidate_instructions = body.get("instructions", "")
+
+    if not skill_id or not candidate_instructions:
+        raise HTTPException(400, "skill_id and instructions required")
+
+    lib = get_skill_library()
+    if not lib:
+        raise HTTPException(500, "Skill library not initialized")
+    skill = lib._find_skill(team_id, skill_id)
+    if not skill:
+        raise HTTPException(404, f"Skill {skill_id} not found")
+
+    # Constraint check first
+    cv = validate_all(skill.instructions, candidate_instructions, "skill")
+    if not cv["passed"]:
+        return {"passed_constraints": False, "violations": cv["violations"], "score": 0}
+
+    # Load dataset for evaluation
+    eval_set = []
+    if dataset_id:
+        try:
+            ds = _load_dataset(dataset_id)
+            eval_set = ds.val if ds.val else ds.examples[:5]
+        except HTTPException:
+            pass
+
+    if not eval_set:
+        raise HTTPException(400, "dataset_id required or dataset too small")
+
+    report = await evaluate_skill(
+        skill_id=skill_id,
+        skill_name=skill.name,
+        instructions=candidate_instructions,
+        eval_examples=eval_set,
+    )
+
+    score = apply_length_penalty(
+        report.mean_composite,
+        len(skill.instructions),
+        len(candidate_instructions),
+    )
+
+    return {
+        "passed_constraints": True,
+        "score": round(score, 3),
+        "raw_score": round(report.mean_composite, 3),
+        "details": report.to_dict(),
+        "length_original": len(skill.instructions),
+        "length_candidate": len(candidate_instructions),
+    }
+
+
+@router.post("/evolution/step/apply")
+async def evolution_step_apply(body: Dict[str, Any]):
+    """步骤5: 应用选中的变异到技能 (棘轮锁定)."""
+    from agents.skill_evolver import get_skill_evolver
+
+    skill_id = body.get("skill_id", "")
+    team_id = body.get("team_id", "build_system")
+    new_instructions = body.get("instructions", "")
+    baseline_score = body.get("baseline_score", 0)
+    new_score = body.get("new_score", 0)
+
+    if not skill_id or not new_instructions:
+        raise HTTPException(400, "skill_id and instructions required")
+
+    if new_score <= baseline_score:
+        raise HTTPException(400, "New score must be higher than baseline")
+
+    evolver = get_skill_evolver()
+    result = evolver.apply_evolution(
+        team_id=team_id,
+        skill_id=skill_id,
+        new_instructions=new_instructions,
+    )
+    if result.get("error"):
+        raise HTTPException(500, result["error"])
+
+    return {
+        "status": "applied",
+        "skill_id": skill_id,
+        "new_version": result.get("version"),
+        "score_improvement": f"+{(new_score - baseline_score) * 100:.1f}%",
+    }
+
+
+__all__ = ["router", "set_teams"]

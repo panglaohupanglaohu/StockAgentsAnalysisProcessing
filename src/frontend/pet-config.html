@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="taste-light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生态配置 — AgentsGroup2026</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/theme.css">
+<link rel="stylesheet" href="/css/topbar-ws.css">
+<style>
+body { background: #f5f7fa; color: #1a202c; font-family: -apple-system, sans-serif; margin: 0; padding: 20px; }
+.topbar-ws { margin-bottom: 20px; }
+h1 { font-size: 20px; margin: 20px 0; }
+.pet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; }
+.pet-card { background: #fff; border: 1px solid #e2e5e9; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.pet-card.is-new { border-color: #f6ad55; box-shadow: 0 0 0 2px #feebc8; }
+.pet-card h2 { font-size: 16px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.pet-card h2 .species { font-size: 12px; color: #718096; font-weight: normal; }
+.pet-card h2 .badge-new { font-size: 10px; background: #f6ad55; color: #fff; padding: 1px 6px; border-radius: 8px; }
+.form-section { margin-bottom: 14px; }
+.form-section h3 { font-size: 12px; text-transform: uppercase; color: #718096; margin: 0 0 6px; letter-spacing: 0.5px; }
+.form-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
+.form-row label { width: 110px; font-size: 12px; color: #4a5568; flex-shrink: 0; }
+.form-row input, .form-row select, .form-row textarea { flex: 1; padding: 6px 8px; border: 1px solid #d1d9e6; border-radius: 6px; font-size: 12px; font-family: inherit; }
+.form-row input:focus, .form-row select:focus { outline: none; border-color: #4a90d9; }
+.form-row .hint { font-size: 10px; color: #a0aec0; }
+.route-editor { background: #f7f8fa; border: 1px dashed #cbd5e0; border-radius: 6px; padding: 8px; font-size: 11px; color: #4a5568; min-height: 40px; font-family: monospace; width: 100%; box-sizing: border-box; }
+.btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.btn-primary { background: #4a90d9; color: #fff; }
+.btn-danger { background: #e04040; color: #fff; }
+.btn-success { background: #34d399; color: #fff; }
+.btn-test { background: #805ad5; color: #fff; }
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.eco-section { background: #fff; border: 1px solid #e2e5e9; border-radius: 12px; padding: 16px; margin-top: 16px; }
+.eco-matrix { display: grid; gap: 4px; margin-top: 8px; }
+.eco-cell { padding: 8px 10px; text-align: center; font-size: 11px; border: 1px solid #e2e5e9; border-radius: 4px; cursor: pointer; user-select: none; transition: background .12s; }
+.eco-cell.header { font-weight: 600; background: #f7f8fa; cursor: default; }
+.eco-cell.diag { background: #f7f8fa; cursor: default; color: #cbd5e0; }
+.eco-cell.chase { background: #fed7d7; color: #c53030; font-weight: 600; }
+.eco-cell.flee { background: #bee3f8; color: #2c5282; font-weight: 600; }
+.eco-cell.coexist { background: #c6f6d5; color: #22543d; font-weight: 600; }
+.eco-cell:hover:not(.header):not(.diag) { transform: scale(1.05); }
+.add-pet-bar { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tts-status { font-size: 11px; padding: 4px 10px; border-radius: 12px; }
+.tts-status.ok { background: #c6f6d5; color: #22543d; }
+.tts-status.warn { background: #feebc8; color: #7b341e; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2d3748; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 9999; opacity: 0; transition: opacity .25s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.voice-test-result { font-size: 11px; margin-top: 4px; min-height: 16px; }
+.voice-test-result.ok { color: #22543d; }
+.voice-test-result.err { color: #c53030; }
+/* 互动关系矩阵：按生物着色 + 对角分裂双向格 */
+.eco-cell.corner { font-size: 10px; color: #718096; line-height: 1.3; }
+.eco-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.eco-cell.split { position: relative; padding: 0; overflow: hidden; background: #fff; cursor: default; min-height: 46px; }
+.eco-cell.mirror { background: #fafbfc; color: #cbd5e0; cursor: default; }
+.eco-tri { position: absolute; inset: 0; font-size: 13px; font-weight: 700; display: flex; cursor: pointer; transition: filter .12s; }
+.eco-tri:hover { filter: brightness(1.1); }
+.eco-tri.tl { clip-path: polygon(0 0, 100% 0, 0 100%); align-items: flex-start; justify-content: flex-start; padding: 3px 0 0 6px; }
+.eco-tri.br { clip-path: polygon(100% 0, 100% 100%, 0 100%); align-items: flex-end; justify-content: flex-end; padding: 0 6px 3px 0; }
+</style>
+  <link rel="stylesheet" href="/css/taste-light.css">
+</head>
+<body>
+<div class="topbar-ws">
+  <div class="topbar-ws__left">
+    <div class="logo" style="width:32px;height:32px;border-radius:6px;background:#e8a020;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">🐾</div>
+    <h1>生态配置</h1>
+  </div>
+  <nav class="topbar-ws__nav" aria-label="主导航" data-nav-auto>
+    <a href="/agent-team-config.html">智能体团队</a>
+    <a href="/plaza.html">议事广场</a>
+    <a href="/skill-extract.html">技能萃取</a>
+    <a href="/Agent-digital-twin.html?office3d=1">数字孪生</a>
+    <a href="/cost-dashboard.html">Token节省</a>
+    <a href="/pet-config.html">生态配置</a>
+  </nav>
+</div>
+
+<div class="tab-bar" style="display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e2e5e9">
+  <button class="tab-btn active" id="tab-btn-creatures" onclick="switchTab('creatures')" style="padding:10px 18px;border:none;background:none;font-size:14px;font-weight:600;color:#4a90d9;border-bottom:2px solid #4a90d9;margin-bottom:-2px;cursor:pointer">🐾 生物个体</button>
+  <button class="tab-btn" id="tab-btn-runtime" onclick="switchTab('runtime')" style="padding:10px 18px;border:none;background:none;font-size:14px;font-weight:600;color:#718096;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer">🧬 仿生生态运行时参数</button>
+</div>
+
+<div id="tab-creatures">
+  <div class="add-pet-bar">
+    <button class="btn btn-success" onclick="addNewPet()">+ 新增生物</button>
+    <button class="btn btn-primary" onclick="saveAll()">💾 保存全部</button>
+    <button class="btn" onclick="loadConfig()" style="background:#e2e5e9">🔄 重新加载</button>
+    <span id="tts-status" class="tts-status warn">TTS 引擎检测中…</span>
+  </div>
+
+  <div class="pet-grid" id="pet-grid"></div>
+
+  <div class="eco-section">
+    <h2 style="font-size:16px;margin:0 0 8px">🔗 互动关系矩阵</h2>
+    <p style="font-size:12px;color:#718096;margin:0 0 8px">每个生物有专属颜色（名牌圆点）。上三角每格 = 一对生物的关系，沿对角线<b>分裂为两个色块</b>：<b>左上半</b>=行首生物（用它的颜色）遇到列生物时的行为；<b>右下半</b>=列生物（用它的颜色）遇到行首生物时的行为。点击任一色块循环：无<b>·</b> → <b style="color:#e04040">追</b> → <b style="color:#2b6cb0">逃</b> → <b style="color:#2f855a">共</b>。切换后自动保存。</p>
+    <div id="eco-matrix" class="eco-matrix"></div>
+  </div>
+</div>
+
+<div id="tab-runtime" style="display:none">
+  <div class="add-pet-bar">
+    <button class="btn btn-primary" onclick="saveRuntime()">💾 保存参数</button>
+    <button class="btn" onclick="loadRuntime()" style="background:#e2e5e9">🔄 重新加载</button>
+    <button class="btn btn-danger" onclick="resetRuntime()">↺ 恢复默认</button>
+    <button class="btn btn-success" type="button" onclick="applyEvolutionPressurePreset()" title="丰饶↓ 事故↑ 闲置税 + 无技偏压（与孪生页左侧音量旋钮同口径）">🎛 一键加压（同步孪生旋钮）</button>
+    <button class="btn" type="button" onclick="applyLooseHabitatPreset()" style="background:#e2e5e9" title="宽松生境（易苟活，适合演示）">🍃 宽松生境</button>
+    <span style="font-size:12px;color:#718096">H/F/L · 代谢 · 生境 · 演化加压 · <b>LLM 分析提示词</b>均可编辑</span>
+  </div>
+  <div class="add-pet-bar" style="gap:10px">
+    <input id="runtime-search" type="search" placeholder="搜索参数名/说明…（如 llm / skill_idle）" oninput="runtimeSearchFilter(this.value)"
+      style="flex:1;min-width:180px;max-width:320px;padding:7px 10px;border:1px solid #d1d9e6;border-radius:6px;font-size:12px">
+    <button class="btn" type="button" onclick="runtimeToggleAll(true)" style="background:#e2e5e9">全部展开</button>
+    <button class="btn" type="button" onclick="runtimeToggleAll(false)" style="background:#e2e5e9">全部折叠</button>
+  </div>
+  <div id="runtime-sections"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js" data-page="pet"></script>
+<script>
+let config = { pets: [], ecosystem: { chase_pairs: [], flee_pairs: [], coexistence: [] } };
+let _ttsVoices = [];        // edge-tts voices from backend
+let _browserVoices = [];    // browser speechSynthesis voices
+let _ttsStatus = null;
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+async function loadConfig() {
+  const data = await api.get('/api/v1/pet-ecosystem/config');
+  if (!data) { alert('加载失败: ' + (api._lastError ? api._lastError.message : '无响应') + '\n（若为 401 请先登录）'); return; }
+  config = {
+    pets: (data.pets || []).map(p => ({ ...p, _isNew: false })),
+    ecosystem: data.ecosystem || { chase_pairs: [], flee_pairs: [], coexistence: [] }
+  };
+  // 兼容旧配置：无 flee_pairs 字段
+  config.ecosystem.flee_pairs = config.ecosystem.flee_pairs || [];
+  config.ecosystem.coexistence = config.ecosystem.coexistence || [];
+  render();
+  toast('✅ 配置已加载（' + config.pets.length + ' 个生物）');
+}
+
+async function loadTTS() {
+  try {
+    const [st, vd] = await Promise.all([
+      api.get('/api/v1/tts/status'),
+      api.get('/api/v1/tts/voices'),
+    ]);
+    _ttsStatus = st;
+    _ttsVoices = (vd && vd.voices) || [];
+  } catch (e) { console.warn('[tts] load failed', e); }
+  // 浏览器语音
+  if (window.speechSynthesis) {
+    _browserVoices = speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = () => { _browserVoices = speechSynthesis.getVoices(); render(); };
+  }
+  renderTTSStatus();
+  // 关键：女声列表就绪后必须重渲染，否则 Edge-TTS 下拉为空，选不中声道
+  render();
+}
+
+function renderTTSStatus() {
+  const el = document.getElementById('tts-status');
+  if (!_ttsStatus) { el.className = 'tts-status warn'; el.textContent = 'TTS 引擎离线'; return; }
+  const engine = _ttsStatus.engine || 'gpt-sovits';
+  const edgeOk = _ttsStatus.edge_tts && _ttsStatus.edge_tts.available;
+  const gptOk = _ttsStatus.gpt_sovits && _ttsStatus.gpt_sovits.online;
+  const parts = [`引擎: ${engine}`];
+  if (engine === 'gpt-sovits') parts.push(gptOk ? 'GPT-SoVITS在线✓' : 'GPT-SoVITS离线→Edge兜底');
+  parts.push(edgeOk ? 'Edge-TTS可用✓' : 'Edge-TTS不可用✗');
+  el.className = 'tts-status ' + (edgeOk ? 'ok' : 'warn');
+  el.textContent = parts.join(' · ');
+}
+
+function render() { renderPets(); renderEcoMatrix(); }
+
+function renderPets() {
+  const grid = document.getElementById('pet-grid');
+  grid.innerHTML = config.pets.map((pet, i) => `
+    <div class="pet-card ${pet._isNew ? 'is-new' : ''}" data-pet-idx="${i}">
+      <h2>${esc(pet.name || '未命名')} <span class="species">${esc(pet.species || '未设定')}</span>${pet._isNew ? '<span class="badge-new">未保存</span>' : ''}</h2>
+      ${renderBaseSection(pet, i)}
+      ${renderModelSection(pet, i)}
+      ${renderBehaviorSection(pet, i)}
+      ${renderStateSection(pet, i)}
+      ${renderSpeakSection(pet, i)}
+      ${renderVoiceSection(pet, i)}
+      ${renderClickSection(pet, i)}
+      <div class="actions">
+        <button class="btn btn-primary" onclick="savePet(${i})">💾 保存</button>
+        <button class="btn btn-danger" onclick="deletePet(${i})">🗑 删除</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderBaseSection(pet, i) {
+  return `<div class="form-section">
+    <h3>📋 基本</h3>
+    <div class="form-row"><label>ID</label><input type="text" value="${esc(pet.id||'')}" readonly style="background:#f7f8fa;color:#a0aec0"></div>
+    <div class="form-row"><label>名称</label><input type="text" value="${esc(pet.name||'')}" onchange="updateField(${i},'name',this.value)"></div>
+    <div class="form-row"><label>物种</label><input type="text" value="${esc(pet.species||'')}" onchange="updateField(${i},'species',this.value)" placeholder="cat / mouse / bird… 自由输入"></div>
+    <div class="form-row"><label>团队ID</label><input type="text" value="${esc(pet.team_id||'pet_squad')}" onchange="updateField(${i},'team_id',this.value)"></div>
+  </div>`;
+}
+
+function renderModelSection(pet, i) {
+  const m = pet.model || {};
+  const isCustom = (m.type || '').startsWith('custom') || (m.type && m.type !== 'builtin_cat' && m.type !== 'builtin_mouse');
+  const typeVal = isCustom ? 'custom' : (m.type || 'builtin_cat');
+  return `<div class="form-section">
+    <h3>📐 模型</h3>
+    <div class="form-row"><label>类型</label><select onchange="onModelTypeChange(${i},this.value)">
+      <option value="builtin_cat" ${typeVal==='builtin_cat'?'selected':''}>builtin_cat（内置猫）</option>
+      <option value="builtin_mouse" ${typeVal==='builtin_mouse'?'selected':''}>builtin_mouse（内置鼠）</option>
+      <option value="custom" ${typeVal==='custom'?'selected':''}>custom（自定义/外部模型）</option>
+    </select></div>
+    ${isCustom ? `<div class="form-row"><label>模型规格</label><input type="text" value="${esc(m.custom_spec||m.type||'')}" onchange="updateField(${i},'model.custom_spec',this.value)" placeholder="gltf URL / 模型标识，自由输入"><span class="hint">自由输入</span></div>` : ''}
+    <div class="form-row"><label>缩放</label><input type="number" step="0.05" value="${m.scale??1.0}" onchange="updateField(${i},'model.scale',parseFloat(this.value))"></div>
+    <div class="form-row"><label>毛色(hex)</label><input type="text" value="${esc(m.fur_color||'0xf2f2f2')}" onchange="updateField(${i},'model.fur_color',this.value)"></div>
+    <div class="form-row"><label>耳X</label><input type="number" step="0.01" value="${m.ear_position_x??0.52}" onchange="updateField(${i},'model.ear_position_x',parseFloat(this.value))"></div>
+    <div class="form-row"><label>耳摆幅度</label><input type="number" step="0.01" value="${m.ear_swing_amplitude??0.3}" onchange="updateField(${i},'model.ear_swing_amplitude',parseFloat(this.value))"></div>
+    <div class="form-row"><label>尾长</label><input type="number" step="0.01" value="${m.tail_length??0.55}" onchange="updateField(${i},'model.tail_length',parseFloat(this.value))"></div>
+  </div>`;
+}
+
+function onModelTypeChange(i, val) {
+  if (val === 'custom') {
+    updateField(i, 'model.type', 'custom');
+    updateField(i, 'model.custom_spec', config.pets[i].model.custom_spec || '');
+  } else {
+    updateField(i, 'model.type', val);
+    config.pets[i].model && delete config.pets[i].model.custom_spec;
+  }
+  render();
+}
+
+function renderBehaviorSection(pet, i) {
+  const b = pet.behavior || {};
+  const others = config.pets.map((p, j) => j !== i ? p.id : null).filter(Boolean);
+  return `<div class="form-section">
+    <h3>🏃 行为（巡逻 / 速度）<span class="hint">追/逃由「角色」驱动，见下方心理·意图</span></h3>
+    <div class="form-row"><label>速度</label><input type="number" step="0.1" value="${b.speed??1.5}" onchange="updateField(${i},'behavior.speed',parseFloat(this.value))"></div>
+    <div class="form-row"><label>逃跑加速</label><input type="number" step="0.1" value="${b.flee_speed_multiplier??1.8}" onchange="updateField(${i},'behavior.flee_speed_multiplier',parseFloat(this.value))"><span class="hint">prey 逃逸倍率</span></div>
+    <div class="form-row"><label>追逐目标</label><select multiple size="${Math.max(2,others.length)}" onchange="updateMulti(${i},'behavior.chase_targets',this)">
+      ${others.map(id=>`<option value="${id}" ${(b.chase_targets||[]).includes(id)?'selected':''}>${id}</option>`).join('')}
+    </select><span class="hint">留空=追所有 prey</span></div>
+    <div class="form-row"><label>逃跑来源</label><select multiple size="${Math.max(2,others.length)}" onchange="updateMulti(${i},'behavior.flee_from',this)">
+      ${others.map(id=>`<option value="${id}" ${(b.flee_from||[]).includes(id)?'selected':''}>${id}</option>`).join('')}
+    </select><span class="hint">留空=躲所有 predator</span></div>
+    <div class="form-row"><label>巡逻路线</label><span class="hint">[[x,y],…]</span></div>
+    <textarea class="route-editor" rows="3" onblur="updateRoute(${i},this.value)">${JSON.stringify(b.route||[])}</textarea>
+  </div>`;
+}
+
+function renderStateSection(pet, i) {
+  const role = pet.role || ((pet.behavior && (pet.behavior.chase_targets||[]).length) ? 'predator' : 'prey');
+  const ms = pet.mental_state || {};
+  const it = pet.intention || {};
+  const pc = pet.perception || {};
+  const predator = role === 'predator';
+  return `<div class="form-section">
+    <h3>🧠 心理 / 意图（Predator/Prey）</h3>
+    <div class="form-row"><label>角色</label><select onchange="onRoleChange(${i},this.value)">
+      <option value="predator" ${predator?'selected':''}>predator（捕食者）</option>
+      <option value="prey" ${!predator?'selected':''}>prey（猎物）</option>
+    </select></div>
+    <div class="form-row"><label>感知半径</label><input type="number" step="0.5" value="${pc.detect_radius??6.0}" onchange="updateField(${i},'perception.detect_radius',parseFloat(this.value))"></div>
+    <div class="form-row"><label>视野角(°)</label><input type="number" step="10" value="${pc.vision_cone_deg??300}" onchange="updateField(${i},'perception.vision_cone_deg',parseFloat(this.value))"></div>
+    ${predator ? `
+    <div class="form-row"><label>饱食时长(秒)</label><input type="number" step="1" value="${ms.hunger_full_sec??20}" onchange="updateField(${i},'mental_state.hunger_full_sec',parseFloat(this.value))"><span class="hint">饥饿 H 0→1</span></div>
+    <div class="form-row"><label>追猎阈值</label><input type="number" step="0.05" value="${ms.hunt_hunger_threshold??0.3}" onchange="updateField(${i},'mental_state.hunt_hunger_threshold',parseFloat(this.value))"></div>
+    <div class="form-row"><label>转向代价β2</label><input type="number" step="0.05" value="${it.beta_turn_cost??0.2}" onchange="updateField(${i},'intention.beta_turn_cost',parseFloat(this.value))"></div>
+    <div class="form-row"><label>目标持久化阈值</label><input type="number" step="0.1" value="${it.persistence_threshold??1.5}" onchange="updateField(${i},'intention.persistence_threshold',parseFloat(this.value))"></div>
+    <div class="form-row"><label>捕获半径</label><input type="number" step="0.1" value="${it.catch_radius??0.8}" onchange="updateField(${i},'intention.catch_radius',parseFloat(this.value))"></div>
+    ` : `
+    <div class="form-row"><label>恐惧尺度 D0</label><input type="number" step="0.5" value="${ms.fear_scale_D0??6.0}" onchange="updateField(${i},'mental_state.fear_scale_D0',parseFloat(this.value))"><span class="hint">F=min(1,D0/d)</span></div>
+    <div class="form-row"><label>逃逸阈值 f_escape</label><input type="number" step="0.05" value="${ms.f_escape??0.55}" onchange="updateField(${i},'mental_state.f_escape',parseFloat(this.value))"></div>
+    <div class="form-row"><label>平静阈值 f_calm</label><input type="number" step="0.05" value="${ms.f_calm??0.35}" onchange="updateField(${i},'mental_state.f_calm',parseFloat(this.value))"></div>
+    `}
+  </div>`;
+}
+
+function onRoleChange(i, val) {
+  updateField(i, 'role', val);
+  render();
+}
+
+function renderSpeakSection(pet, i) {
+  const s = pet.speak || {};
+  return `<div class="form-section">
+    <h3>💬 台词</h3>
+    <div class="form-row"><label>来源</label><select onchange="updateField(${i},'speak.provider',this.value)">
+      ${['llm','none'].map(t=>`<option value="${t}" ${s.provider===t?'selected':''}>${t}</option>`).join('')}
+    </select></div>
+    <div class="form-row"><label>技能ID</label><input type="text" value="${esc(s.skill_id||'')}" onchange="updateField(${i},'speak.skill_id',this.value)"></div>
+    <div class="form-row"><label>触发</label><input type="text" value="${esc(s.trigger||'on_detect_mouse')}" onchange="updateField(${i},'speak.trigger',this.value)"></div>
+    <div class="form-row"><label>冷却(秒)</label><input type="number" value="${s.cooldown_sec??10}" onchange="updateField(${i},'speak.cooldown_sec',parseInt(this.value))"></div>
+    <div class="form-row"><label>兜底文案</label><input type="text" value="${esc(s.fallback||'')}" onchange="updateField(${i},'speak.fallback',this.value)"></div>
+  </div>`;
+}
+
+function renderVoiceSection(pet, i) {
+  const v = pet.voice || {};
+  const provider = v.provider || 'browser';
+  const enabled = v.enabled !== false;
+  let body = '';
+  if (provider === 'browser') {
+    body = `
+    <div class="form-row"><label>浏览器语音</label><select onchange="updateField(${i},'voice.preferred_voice',this.value)">
+      ${_browserVoices.map(vv=>`<option value="${esc(vv.name)}" ${(v.preferred_voice||'')===vv.name?'selected':''}>${esc(vv.name)} (${vv.lang})</option>`).join('')}
+    </select></div>
+    <div class="form-row"><label>语言</label><input type="text" value="${esc(v.lang||'zh-CN')}" onchange="updateField(${i},'voice.lang',this.value)"></div>
+    <div class="form-row"><label>语速</label><input type="number" step="0.05" value="${v.rate??1.1}" onchange="updateField(${i},'voice.rate',parseFloat(this.value))"></div>
+    <div class="form-row"><label>音调</label><input type="number" step="0.05" value="${v.pitch??1.8}" onchange="updateField(${i},'voice.pitch',parseFloat(this.value))"></div>
+    <div class="form-row"><label>音量</label><input type="number" step="0.05" value="${v.volume??0.9}" onchange="updateField(${i},'voice.volume',parseFloat(this.value))"></div>`;
+  } else if (provider === 'edge-tts') {
+    // 切到 Edge-TTS 时若未选声道，默认取第一个（女声晓晓），保证保存即生效
+    if (!v.edge_voice && _ttsVoices.length) { v.edge_voice = _ttsVoices[0].voice; }
+    body = `
+    <div class="form-row"><label>Edge神经语音</label><select onchange="updateField(${i},'voice.edge_voice',this.value)">
+      ${_ttsVoices.map(vv=>`<option value="${vv.voice}" ${(v.edge_voice||'')===vv.voice?'selected':''}>${esc(vv.desc)} (${vv.voice})</option>`).join('')}
+    </select></div>
+    <div class="form-row"><label>语速</label><input type="text" value="${esc(v.edge_rate||'+8%')}" onchange="updateField(${i},'voice.edge_rate',this.value)" placeholder="+8%"></div>
+    <div class="form-row"><label>音调</label><input type="text" value="${esc(v.edge_pitch||'+0Hz')}" onchange="updateField(${i},'voice.edge_pitch',this.value)" placeholder="+0Hz"></div>`;
+  } else { // gpt-sovits
+    body = `
+    <div class="form-row"><label>说明</label><span class="hint">GPT-SoVITS 使用全局参考音频（见 settings.json tts.ref_audio_path），需先启动服务</span></div>
+    <div class="form-row"><label>语速因子</label><input type="number" step="0.1" value="${v.speed_factor??1.0}" onchange="updateField(${i},'voice.speed_factor',parseFloat(this.value))"></div>`;
+  }
+  return `<div class="form-section">
+    <h3>🔊 语音</h3>
+    <div class="form-row"><label>启用</label><select onchange="updateField(${i},'voice.enabled',this.value==='true')">
+      <option value="true" ${enabled?'selected':''}>是</option>
+      <option value="false" ${!enabled?'selected':''}>否</option>
+    </select></div>
+    <div class="form-row"><label>引擎</label><select onchange="onVoiceProviderChange(${i},this.value)">
+      <option value="browser" ${provider==='browser'?'selected':''}>浏览器内置（Web Speech）</option>
+      <option value="edge-tts" ${provider==='edge-tts'?'selected':''}>Edge-TTS 神经语音（后端）</option>
+      <option value="gpt-sovits" ${provider==='gpt-sovits'?'selected':''}>GPT-SoVITS 克隆（后端）</option>
+    </select></div>
+    ${body}
+    <div class="form-row"><label>去标点</label><select onchange="updateField(${i},'voice.strip_punctuation',this.value==='true')">
+      <option value="true" ${v.strip_punctuation!==false?'selected':''}>是</option>
+      <option value="false" ${v.strip_punctuation===false?'selected':''}>否</option>
+    </select></div>
+    <div class="form-row"><label>超时(秒)</label><input type="number" value="${v.timeout_sec??15}" onchange="updateField(${i},'voice.timeout_sec',parseInt(this.value))"></div>
+    <div class="actions">
+      <button class="btn btn-test" onclick="testVoice(${i})">▶ 试听语音</button>
+      <span id="voice-test-${i}" class="voice-test-result"></span>
+    </div>
+  </div>`;
+}
+
+function onVoiceProviderChange(i, val) {
+  updateField(i, 'voice.provider', val);
+  render();
+}
+
+function renderClickSection(pet, i) {
+  const c = pet.click_action || {};
+  return `<div class="form-section">
+    <h3>🖱 点击动作</h3>
+    <div class="form-row"><label>类型</label><select onchange="updateField(${i},'click_action.type',this.value)">
+      ${['dialog','bubble'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
+    </select></div>
+    ${c.type === 'dialog' ? `<div class="form-row"><label>人格</label><input type="text" value="${esc(c.personality||'')}" onchange="updateField(${i},'click_action.personality',this.value)"></div>` : ''}
+  </div>`;
+}
+
+const REL_LABEL = { chase: '追', flee: '逃', coexist: '共', '': '·' };
+const REL_NAME = { chase: '追', flee: '逃', coexist: '共', '': '无' };
+const PET_PALETTE = ['#e04040', '#2b6cb0', '#2f855a', '#d69e2e', '#805ad5', '#dd6b20', '#319795', '#d53f8c'];
+function petColor(i) { return PET_PALETTE[i % PET_PALETTE.length]; }
+function idName(id) { const p = config.pets.find(x => x.id === id); return p ? (p.name || p.id) : id; }
+
+// 单个三角半色块：actorId 遇到 otherId 的行为，用 actor 的颜色
+function ecoTri(pos, actorId, actorIdx, otherId) {
+  const rel = relationship(actorId, otherId);
+  const col = petColor(actorIdx);
+  const active = rel !== '';
+  const bg = active ? col : (col + '26');   // 无关系时用 15% 淡色底
+  const fg = active ? '#fff' : '#a0aec0';
+  const title = `${idName(actorId)} 遇到 ${idName(otherId)} → ${REL_NAME[rel]}（点击切换）`;
+  return `<div class="eco-tri ${pos}" data-from="${actorId}" data-to="${otherId}" style="background:${bg};color:${fg}" title="${esc(title)}">${REL_LABEL[rel]}</div>`;
+}
+
+function renderEcoMatrix() {
+  const el = document.getElementById('eco-matrix');
+  const pets = config.pets;
+  if (pets.length === 0) { el.innerHTML = '<p style="font-size:12px;color:#718096">先添加生物</p>'; el.style.gridTemplateColumns = ''; return; }
+  el.style.gridTemplateColumns = `100px repeat(${pets.length}, 78px)`;
+  let html = '<div class="eco-cell header corner">主体＼对象</div>';
+  pets.forEach((p, ci) => { html += `<div class="eco-cell header" style="border-top:3px solid ${petColor(ci)}"><span class="eco-dot" style="background:${petColor(ci)}"></span>${esc(p.name || p.id)}</div>`; });
+  pets.forEach((rowPet, ri) => {
+    html += `<div class="eco-cell header" style="border-left:3px solid ${petColor(ri)}"><span class="eco-dot" style="background:${petColor(ri)}"></span>${esc(rowPet.name || rowPet.id)}</div>`;
+    pets.forEach((colPet, ci) => {
+      if (ri === ci) { html += '<div class="eco-cell diag">—</div>'; return; }
+      if (ci < ri) { html += '<div class="eco-cell mirror" title="见对角线上方对应格">·</div>'; return; }
+      // 上三角：一对生物 = 一个分裂方块（左上=行主体，右下=列主体）
+      html += `<div class="eco-cell split">
+        ${ecoTri('tl', rowPet.id, ri, colPet.id)}
+        ${ecoTri('br', colPet.id, ci, rowPet.id)}
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+function relationship(fromId, toId) {
+  const eco = config.ecosystem;
+  if ((eco.chase_pairs||[]).some(p => p[0]===fromId && p[1]===toId)) return 'chase';
+  if ((eco.flee_pairs||[]).some(p => p[0]===fromId && p[1]===toId)) return 'flee';
+  if ((eco.coexistence||[]).some(p => (p[0]===fromId&&p[1]===toId)||(p[0]===toId&&p[1]===fromId))) return 'coexist';
+  return '';
+}
+
+// 事件委托：点击矩阵三角色块（一个方向的关系）
+document.addEventListener('click', (e) => {
+  const cell = e.target.closest('.eco-tri[data-from]');
+  if (!cell) return;
+  const from = cell.dataset.from, to = cell.dataset.to;
+  const eco = config.ecosystem;
+  const cur = relationship(from, to);
+  // 先清除该方向所有关系
+  eco.chase_pairs = (eco.chase_pairs||[]).filter(p => !(p[0]===from&&p[1]===to));
+  eco.flee_pairs = (eco.flee_pairs||[]).filter(p => !(p[0]===from&&p[1]===to));
+  eco.coexistence = (eco.coexistence||[]).filter(p => !((p[0]===from&&p[1]===to)||(p[0]===to&&p[1]===from)));
+  // 循环：无→追→逃→共→无
+  let next = cur === '' ? 'chase' : cur === 'chase' ? 'flee' : cur === 'flee' ? 'coexist' : '';
+  if (next === 'chase') eco.chase_pairs.push([from, to]);
+  else if (next === 'flee') eco.flee_pairs.push([from, to]);
+  else if (next === 'coexist') eco.coexistence.push([from, to]);
+  renderEcoMatrix();
+  saveEcosystem(true);
+});
+
+function updateField(petIdx, path, value) {
+  const parts = path.split('.');
+  let obj = config.pets[petIdx];
+  for (let i = 0; i < parts.length - 1; i++) { obj = obj[parts[i]] = obj[parts[i]] || {}; }
+  obj[parts[parts.length - 1]] = value;
+}
+
+function updateMulti(petIdx, path, sel) {
+  const val = Array.from(sel.selectedOptions).map(o => o.value);
+  updateField(petIdx, path, val);
+}
+
+function updateRoute(petIdx, text) {
+  try { config.pets[petIdx].behavior = config.pets[petIdx].behavior || {}; config.pets[petIdx].behavior.route = JSON.parse(text); }
+  catch(e) { alert('路线格式错误，请用 [[x,y],[x,y]...]'); }
+}
+
+async function savePet(idx) {
+  const pet = config.pets[idx];
+  if (!pet) return;
+  const payload = JSON.parse(JSON.stringify(pet));
+  delete payload._isNew;
+  const d = pet._isNew
+    ? await api.post('/api/v1/pet-ecosystem/pets', payload)
+    : await api.put('/api/v1/pet-ecosystem/pets/' + pet.id, payload);
+  if (d && (d.status || d.pet_id)) { pet._isNew = false; toast('✅ 已保存 ' + pet.name); render(); }
+  else { alert('❌ 保存失败: ' + (api._lastError ? api._lastError.message : '未知错误')); }
+}
+
+async function saveAll() {
+  for (let i = 0; i < config.pets.length; i++) {
+    await savePet(i);
+  }
+  await saveEcosystem(false);
+  toast('✅ 全部保存完成');
+}
+
+async function saveEcosystem(silent) {
+  const eco = JSON.parse(JSON.stringify(config.ecosystem));
+  const d = await api.put('/api/v1/pet-ecosystem/ecosystem', eco);
+  if (d && d.status) { if (!silent) toast('✅ 关系已保存'); }
+  else { if (!silent) alert('❌ 关系保存失败: ' + (api._lastError ? api._lastError.message : '未知错误')); }
+}
+
+async function deletePet(idx) {
+  const pet = config.pets[idx];
+  if (!pet) return;
+  if (!confirm(`确定删除 ${pet.name || pet.id}？`)) return;
+  if (!pet._isNew) {
+    try { await api.del('/api/v1/pet-ecosystem/pets/' + pet.id); }
+    catch(e) { console.warn(e); }
+  }
+  config.pets.splice(idx, 1);
+  render();
+  toast('🗑 已删除');
+}
+
+function addNewPet() {
+  const id = 'pet_' + Date.now().toString(36);
+  config.pets.push({
+    id, name: '新生物', species: '', team_id: 'pet_squad',
+    _isNew: true,
+    model: { type: 'builtin_cat', scale: 1.0, fur_color: '0xf2f2f2' },
+    behavior: { type: 'patrol', route: [[0,0],[5,0],[5,5],[0,5]], speed: 1.5, detect_radius: 4.0, chase_targets: [], flee_from: [] },
+    speak: { provider: 'none' },
+    voice: { provider: 'browser', enabled: false, lang: 'zh-CN', rate: 1.1, pitch: 1.8, volume: 0.9, strip_punctuation: true, timeout_sec: 15 },
+    click_action: { type: 'bubble' },
+  });
+  render();
+  toast('➕ 已新增「新生物」，记得点保存');
+}
+
+async function testVoice(idx) {
+  const pet = config.pets[idx];
+  const v = pet.voice || {};
+  const resEl = document.getElementById('voice-test-' + idx);
+  resEl.className = 'voice-test-result'; resEl.textContent = '合成中…';
+  const text = `你好，我是${pet.name || '新生物'}`;
+  try {
+    if ((v.provider || 'browser') === 'browser') {
+      if (!window.speechSynthesis) throw new Error('浏览器不支持语音合成');
+      speechSynthesis.cancel(); speechSynthesis.resume();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = v.lang || 'zh-CN'; utt.rate = v.rate??1.1; utt.pitch = v.pitch??1.8; utt.volume = v.volume??0.9;
+      const voices = speechSynthesis.getVoices();
+      const fv = voices.find(vv => vv.name === (v.preferred_voice||'')) || voices.find(vv => vv.lang && vv.lang.startsWith('zh')) || voices[0];
+      if (fv) utt.voice = fv;
+      speechSynthesis.speak(utt);
+      resEl.className = 'voice-test-result ok'; resEl.textContent = '▶ 浏览器播放中…';
+    } else {
+      const body = { text, agent_name: pet.name || pet.id };
+      if (v.provider === 'edge-tts' && v.edge_voice) { body.voice = v.edge_voice; if (v.edge_rate) body.rate = v.edge_rate; if (v.edge_pitch) body.pitch = v.edge_pitch; }
+      if (v.provider === 'gpt-sovits') body.speed_factor = v.speed_factor ?? 1.0;
+      const r = await window._agFetch('/api/v1/tts', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.detail || 'HTTP ' + r.status); }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.play();
+      resEl.className = 'voice-test-result ok'; resEl.textContent = '▶ 播放中（引擎: ' + (r.headers.get('X-TTS-Engine')||'?') + '）';
+    }
+  } catch(e) {
+    resEl.className = 'voice-test-result err'; resEl.textContent = '❌ ' + e.message;
+  }
+}
+
+function esc(s) { return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ══════════ Tab 切换 ══════════
+function switchTab(tab) {
+  const isCreatures = tab === 'creatures';
+  document.getElementById('tab-creatures').style.display = isCreatures ? '' : 'none';
+  document.getElementById('tab-runtime').style.display = isCreatures ? 'none' : '';
+  const bc = document.getElementById('tab-btn-creatures'), br = document.getElementById('tab-btn-runtime');
+  bc.style.color = isCreatures ? '#4a90d9' : '#718096'; bc.style.borderBottomColor = isCreatures ? '#4a90d9' : 'transparent';
+  br.style.color = isCreatures ? '#718096' : '#4a90d9'; br.style.borderBottomColor = isCreatures ? 'transparent' : '#4a90d9';
+  if (!isCreatures && !_runtimeLoaded) loadRuntime();
+}
+
+// ══════════ 仿生生态运行时参数 Tab ══════════
+let _runtimeConfig = {};
+let _runtimeLoaded = false;
+
+// section/字段的中文标签 + 说明（来自 plan/todos）
+// XB-7.1: range 滑杆 + 数值联动 + 0~1 概率越界钳位 + 修改高亮
+const RUNTIME_FIELD_CTRL = {
+  // 概率/比例类 → range 0~1
+  fear_escape: { min: 0, max: 1, step: 0.01, unit: '0~1' },
+  fear_calm: { min: 0, max: 1, step: 0.01, unit: '0~1' },
+  hunger_threshold: { min: 0, max: 1, step: 0.01, unit: '0~1' },
+  libido_threshold: { min: 0, max: 1, step: 0.01, unit: '0~1' },
+  revive_ratio: { min: 0, max: 1, step: 0.05, unit: '0~1' },
+  saturation_threshold: { min: 0, max: 1, step: 0.05, unit: '0~1' },
+  exploration_base_rate: { min: 0, max: 1, step: 0.05, unit: '0~1' },
+  blind_learning_rate: { min: 0, max: 1, step: 0.01, unit: '0~1' },
+  drift_prob: { min: 0, max: 1, step: 0.05, unit: '0~1' },
+  predator_pressure: { min: 0, max: 0.5, step: 0.01, unit: '0~0.5' },
+  abundance: { min: 0.2, max: 2.5, step: 0.05, unit: '×' },
+  niche_capacity: { min: 0, max: 20, step: 1, unit: '名额' },
+  share_fraction: { min: 0, max: 1, step: 0.05, unit: '0~1' },
+  follow_bonus: { min: 0, max: 0.5, step: 0.01, unit: '' },
+  help_hunger: { min: 0, max: 1, step: 0.05, unit: '0~1' },
+  genome_carry_cost: { min: 0, max: 0.5, step: 0.01, unit: '' },
+  metabolic_rate: { min: 0, max: 5, step: 0.1, unit: '' },
+  health_max: { min: 10, max: 500, step: 10, unit: '' },
+  forage_gain: { min: 0, max: 30, step: 0.5, unit: '' },
+  forage_miss_penalty: { min: 0, max: 20, step: 0.5, unit: '' },
+  avoid_cost: { min: 0, max: 5, step: 0.1, unit: '' },
+  signal_cost: { min: 0, max: 5, step: 0.05, unit: '' },
+  exploration_half_life: { min: 1, max: 200, step: 1, unit: 't' },
+  solidify_min_uses: { min: 1, max: 50, step: 1, unit: '' },
+  solidify_min_gain: { min: -10, max: 10, step: 0.1, unit: '' },
+  dominant_min_streak: { min: 1, max: 20, step: 1, unit: '' },
+  dominant_usage_threshold: { min: 1, max: 100, step: 1, unit: '' },
+  era_count: { min: 1, max: 10, step: 1, unit: '' },
+  epochs_per_era: { min: 1, max: 20, step: 1, unit: '' },
+  skill_idle_penalty: { min: 0, max: 5, step: 0.1, unit: '' },
+  min_steps_when_contract: { min: 0, max: 500, step: 8, unit: '步' },
+  min_gens_when_contract: { min: 0, max: 20, step: 1, unit: '代' },
+  prefer_forage_when_can_serve: { min: 0, max: 1, step: 1, unit: '0/1' },
+  predator_bias_unskilled: { min: 0, max: 8, step: 0.1, unit: '' },
+  scarce_share_boost: { min: 0, max: 4, step: 0.1, unit: '' },
+  same_pop_share_bias: { min: 0, max: 1, step: 0.05, unit: '' },
+  sexual_selection_strength: { min: 0, max: 3, step: 0.1, unit: '' },
+  freq_dep_strength: { min: 0, max: 2, step: 0.05, unit: '' },
+  epistasis_strength: { min: 0, max: 1, step: 0.05, unit: '' },
+  senescence_rate: { min: 0, max: 0.02, step: 0.001, unit: 'μ/t' },
+  timeout_s: { min: 15, max: 180, step: 5, unit: 's' },
+  max_chars: { min: 200, max: 4000, step: 50, unit: '字' },
+};
+
+// 文本型字段（textarea）—— LLM 提示词等
+const RUNTIME_TEXT_FIELDS = {
+  system_preamble: 1,
+  hard_constraints: 1,
+  output_structure: 1,
+  data_header: 1,
+};
+
+const RUNTIME_META = {
+  mental_state: { title: '🧠 H/F/L 意图仲裁阈值', desc: '感知→意图仲裁：avoid > forage > mate > rest（plan §2）', fields: {
+    fear_escape: '恐惧逃逸阈值（F 超此值→avoid）',
+    fear_calm: '恐惧平静阈值（滞回：降到此值以下才离开 avoid）',
+    hunger_threshold: '饥饿觅食阈值（H 超此值→forage 认领/执行任务）',
+    libido_threshold: '繁殖意图阈值（L 超此值→mate）',
+  }},
+  metabolism: { title: '🩸 Health 代谢账本 · Agent 侧', desc: '个体代谢红线 + 生存时长 + 生命史（衰老属 Agent，非环境选择压）', fields: {
+    health_max: '满血值 health_max',
+    metabolic_rate: '每 tick 基础代谢消耗',
+    revive_ratio: '复活恢复到满血的比例（0~1）',
+    saturation_threshold: '「饱暖」判定阈值（Health 占比）',
+    senescence_rate: '衰老 μ×survival_ticks：个体生命史，防不死垄断基因池（非环境旋钮）',
+  }},
+  learning: { title: '🎲 盲目学习 + 特征抽象', desc: '探索期衰减 + 净收益驱动技能提炼（plan §4）；学习是盲目的，选择是客观的（物竞天择 v2 §3.2）', fields: {
+    exploration_base_rate: '新 Agent 初始探索率（0~1，越高越盲目）',
+    exploration_half_life: '探索率半衰期 tick 数',
+    solidify_min_uses: '触发特征抽象的最小使用次数',
+    solidify_min_gain: '触发特征抽象的最小净收益',
+    blind_learning_rate: '生境演练：REST 时随机习得 skill 的概率（0~1）',
+    genome_carry_cost: '生境演练：每携带 1 个 skill 的每 tick 额外代谢（惩罚技能囤积）',
+  }},
+  habitat: { title: '🌍 生境环境（物竞天择）', desc: '客观环境：丰饶度≈token 松紧；捕食≈突发事故；漂移≈需求变更。压低 abundance / 提高 predator 可逼出 skill 选择', fields: {
+    drift_prob: '每世代生态位漂移概率（随机替换 1 个需求 skill，0~1）',
+    predator_pressure: '每 tick 捕食事件概率（0=关闭，加压建议 0.1~0.2）',
+    abundance: '丰饶度：觅食收益倍率（≈token 松紧；加压建议 0.55~0.75）',
+    niche_capacity: '生态位容量：每 tick 成功觅食名额（0=不限；越小竞争越烈）',
+  }},
+  drill_economics: { title: '🍖 觅食/协作经济学（物竞天择）', desc: '协作有代价才可能被选择；skill_idle_penalty=能 serve 却 REST 的额外代谢', fields: {
+    forage_gain: '觅食命中获得的能量（×丰饶度）',
+    forage_miss_penalty: '觅食未命中的额外代谢惩罚',
+    avoid_cost: '避险动作代谢',
+    signal_cost: '发一次信号（FOOD/HELP/COURT）的代谢成本',
+    share_fraction: '分享时让渡给求助者的收益比例（0~1）',
+    follow_bonus: '跟随 FOOD 信号的觅食成功率加成',
+    help_hunger: '饥饿超过此值才发 HELP 信号（0~1）',
+    skill_idle_penalty: '能匹配 demand 却 REST 的额外代谢（抬高 skill% 的关键旋钮）',
+  }},
+  evolution_pressure: { title: '🎛 演化加压（环境侧）', desc: '日常请在数字孪生「环境压力台」调节；本节是选择压/环境机制。衰老在 metabolism（Agent 侧）', fields: {
+    skill_idle_penalty: '同 drill_economics：能 serve 却 REST 的惩罚（生产路径优先读本节）',
+    genome_carry_cost: '每携带 1 个 skill 的每 tick 额外代谢（覆盖 learning 节）',
+    min_steps_when_contract: '绑定任务契约时至少步数/代（避免 2 代残差主导）',
+    min_gens_when_contract: '绑定任务契约时至少世代数',
+    prefer_forage_when_can_serve: '1=能 serve 且略饿时把 REST 抬成 FORAGE',
+    predator_bias_unskilled: '捕食加权偏向无法 serve 当前 demand 的个体（抬 Skill 选择压）',
+    scarce_share_boost: 'abundance<1 时分享让渡放大系数（抬协作对生存的贡献）',
+    same_pop_share_bias: '0~1 优先同队分享概率（团队边界可被选择）',
+    sexual_selection_strength: '性选择强度：× mate_choosiness，按 COURT/生存/互补 skill 加权择偶',
+    freq_dep_strength: '负频率依赖：稀有 skill 觅食优势（防 skill 池垄断）',
+    epistasis_strength: '技能上位协同：持有 demand 相邻 skill 对时非加性加成',
+  }},
+  selection: { title: '⚖️ 物竞天择选择状态机', desc: 'skill dominant/deprecated 判定（防单次波动误杀）', fields: {
+    dominant_min_streak: '连续正/负净收益判定长度（越大越稳）',
+    dominant_usage_threshold: '晋升 dominant 的最小总使用次数',
+  }},
+  mating: { title: '🧬 交配门禁', desc: '只有跨过「饱暖」门槛的个体才能繁殖', fields: {
+    saturation_threshold: '允许交配的 Health 占比门槛（0~1）',
+  }},
+  era: { title: '🌍 混合竞争·纪元', desc: '大迭代：纪元数 × 每纪元世代；跨纪元环境加压', fields: {
+    era_count: '纪元数（1=单纪元零回归）',
+    epochs_per_era: '每纪元内的世代数',
+  }},
+  llm_analysis: { title: '🔍 LLM 演练分析提示词', desc: '物竞报告「深度分析」用的提示词；可直接改文案。结构化数据会自动接在 data_header 之后', fields: {
+    timeout_s: 'LLM 调用超时（秒）',
+    max_chars: '分析正文最大字数（超长截断）',
+    system_preamble: '角色与任务说明（A=Skill 进化 / B=团队演化）',
+    hard_constraints: '硬约束（T_i 唯一适应度、赛制语义、残差主导时的诊断要求）',
+    output_structure: '输出结构模板（因果 / 两判定 / 旋钮 / 一句话）',
+    data_header: '数据区标题（其后自动拼接演练摘要）',
+  }},
+};
+
+let _runtimeDirty = false;
+let _runtimeBaseline = {};
+let _runtimeCollapsed = {}; // section -> bool
+let _runtimeSearch = '';
+
+function _clampRuntimeVal(key, num) {
+  const c = RUNTIME_FIELD_CTRL[key];
+  if (!c || isNaN(num)) return num;
+  let v = num;
+  if (c.min != null) v = Math.max(c.min, v);
+  if (c.max != null) v = Math.min(c.max, v);
+  return v;
+}
+
+function _runtimeInputHtml(section, key, val) {
+  const dirtyMark = 'data-section="' + section + '" data-key="' + key + '"';
+  // 文本提示词：大 textarea
+  if (RUNTIME_TEXT_FIELDS[key]) {
+    const text = val != null ? String(val) : '';
+    return `<textarea ${dirtyMark} rows="6" style="flex:1;min-width:280px;min-height:96px;font-size:12px;line-height:1.45;font-family:ui-monospace,Menlo,monospace;padding:8px;border:1px solid #d1d9e6;border-radius:6px;resize:vertical"
+      oninput="runtimeFieldChanged(this)">${esc(text)}</textarea>`;
+  }
+  const c = RUNTIME_FIELD_CTRL[key];
+  const v = val != null && val !== '' ? val : (c && c.min != null ? c.min : 0);
+  if (!c) {
+    // bool / 未知：number 兜底
+    if (typeof val === 'boolean') {
+      return `<select ${dirtyMark} onchange="runtimeFieldChanged(this)" style="max-width:120px">
+        <option value="true" ${val ? 'selected' : ''}>true</option>
+        <option value="false" ${!val ? 'selected' : ''}>false</option>
+      </select>`;
+    }
+    return `<input type="number" step="any" value="${v}" ${dirtyMark} style="max-width:120px"
+      oninput="runtimeFieldChanged(this)">`;
+  }
+  return `<input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" ${dirtyMark}
+      style="flex:1;min-width:100px;max-width:180px;accent-color:#22d3ee"
+      oninput="runtimeRangeSync(this)">
+    <input type="number" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" ${dirtyMark}
+      data-pair="1" style="width:72px"
+      oninput="runtimeNumberSync(this)">
+    <span class="hint" style="min-width:36px">${esc(c.unit || '')}</span>`;
+}
+
+async function loadRuntime() {
+  const data = await api.get('/api/v1/eco-runtime/config');
+  if (!data) { toast('❌ 加载失败: ' + (api._lastError ? api._lastError.message : '无响应')); return; }
+  _runtimeConfig = data;
+  _runtimeBaseline = JSON.parse(JSON.stringify(data));
+  _runtimeLoaded = true;
+  _runtimeDirty = false;
+  renderRuntime();
+  toast('✅ 运行时参数已加载');
+}
+
+function runtimeRangeSync(rangeEl) {
+  const key = rangeEl.dataset.key;
+  let v = parseFloat(rangeEl.value);
+  v = _clampRuntimeVal(key, v);
+  rangeEl.value = v;
+  const row = rangeEl.closest('.form-row');
+  const num = row && row.querySelector('input[type=number][data-pair]');
+  if (num) num.value = v;
+  runtimeFieldChanged(rangeEl);
+}
+
+function runtimeNumberSync(numEl) {
+  const key = numEl.dataset.key;
+  let v = parseFloat(numEl.value);
+  if (isNaN(v)) return;
+  v = _clampRuntimeVal(key, v);
+  numEl.value = v;
+  const row = numEl.closest('.form-row');
+  const range = row && row.querySelector('input[type=range]');
+  if (range) range.value = v;
+  runtimeFieldChanged(numEl);
+}
+
+function runtimeFieldChanged(el) {
+  _runtimeDirty = true;
+  el.style.outline = '1px solid #f59e0b';
+  const badge = document.getElementById('runtime-dirty-badge');
+  if (badge) badge.style.display = 'inline';
+}
+
+function runtimeSearchFilter(q) {
+  _runtimeSearch = String(q || '').trim().toLowerCase();
+  // 有搜索时自动展开全部，便于命中行可见
+  if (_runtimeSearch) {
+    Object.keys(RUNTIME_META).forEach(s => { _runtimeCollapsed[s] = false; });
+  }
+  renderRuntime();
+  const el = document.getElementById('runtime-search');
+  if (el && el.value !== q) el.value = q;
+  // 保持光标：重渲后恢复 search 值
+  const searchEl = document.getElementById('runtime-search');
+  if (searchEl) {
+    searchEl.value = q;
+    try { searchEl.focus(); searchEl.setSelectionRange(q.length, q.length); } catch (e) { /* ignore */ }
+  }
+}
+
+function runtimeToggleSection(section) {
+  _runtimeCollapsed[section] = !_runtimeCollapsed[section];
+  renderRuntime();
+  const searchEl = document.getElementById('runtime-search');
+  if (searchEl && _runtimeSearch) searchEl.value = _runtimeSearch;
+}
+
+function runtimeToggleAll(expand) {
+  Object.keys(RUNTIME_META).forEach(s => { _runtimeCollapsed[s] = !expand; });
+  renderRuntime();
+  const searchEl = document.getElementById('runtime-search');
+  if (searchEl && _runtimeSearch) searchEl.value = _runtimeSearch;
+}
+
+function renderRuntime() {
+  const box = document.getElementById('runtime-sections');
+  if (!box) return;
+  const q = _runtimeSearch;
+  box.innerHTML = `<div style="margin-bottom:10px;font-size:12px">
+      <span id="runtime-dirty-badge" style="display:${_runtimeDirty ? 'inline' : 'none'};color:#f59e0b;font-weight:600">● 有未保存修改</span>
+      <span style="color:#a0aec0;margin-left:8px">概率类字段已钳位；滑杆与数字双向联动；支持分节折叠与搜索</span>
+    </div>` + Object.keys(RUNTIME_META).map(section => {
+    const meta = RUNTIME_META[section];
+    const vals = _runtimeConfig[section] || {};
+    const fieldKeys = Object.keys(meta.fields).filter(key => {
+      if (!q) return true;
+      const hay = (key + ' ' + meta.fields[key] + ' ' + meta.title + ' ' + section).toLowerCase();
+      return hay.indexOf(q) >= 0;
+    });
+    if (q && !fieldKeys.length && meta.title.toLowerCase().indexOf(q) < 0 && section.indexOf(q) < 0) {
+      return ''; // 整节无匹配则隐藏
+    }
+    const collapsed = !!_runtimeCollapsed[section] && !q;
+    const rows = fieldKeys.map(key => {
+      const dirty = _runtimeBaseline[section] && _runtimeBaseline[section][key] !== vals[key]
+        && vals[key] != null;
+      const isText = !!RUNTIME_TEXT_FIELDS[key];
+      return `
+      <div class="form-row" data-runtime-row="1" style="align-items:${isText ? 'flex-start' : 'center'};gap:8px;flex-wrap:wrap${dirty ? ';background:rgba(245,158,11,.08);border-radius:6px;padding:4px' : ''}">
+        <label style="width:200px;flex-shrink:0${isText ? ';padding-top:6px' : ''}" title="${esc(meta.fields[key])}">${esc(key)}${dirty ? ' <span style="color:#f59e0b">●</span>' : ''}</label>
+        ${_runtimeInputHtml(section, key, vals[key])}
+        ${isText ? '' : `<span class="hint" style="flex:1;min-width:120px">${esc(meta.fields[key])}</span>`}
+        ${isText ? `<div class="hint" style="width:100%;margin-left:208px">${esc(meta.fields[key])}</div>` : ''}
+      </div>`;
+    }).join('');
+    const chevron = collapsed ? '▸' : '▾';
+    return `<div class="eco-section" data-section-id="${esc(section)}" style="margin-bottom:16px">
+      <h2 style="font-size:15px;margin:0 0 4px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px"
+        onclick="runtimeToggleSection('${esc(section)}')">
+        <span style="color:#718096;width:14px">${chevron}</span>${meta.title}
+        <span style="font-size:10px;color:#a0aec0;font-weight:400">(${fieldKeys.length} 项)</span>
+      </h2>
+      <p style="font-size:11px;color:#a0aec0;margin:0 0 10px;display:${collapsed ? 'none' : ''}">${esc(meta.desc)}</p>
+      <div style="display:${collapsed ? 'none' : ''}">${rows || '<div class="hint">（无匹配字段）</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function _collectRuntime() {
+  const out = {};
+  // number（每个字段一个权威值；range 与 number 同步）
+  document.querySelectorAll('#runtime-sections input[type=number][data-section]').forEach(inp => {
+    const s = inp.dataset.section, k = inp.dataset.key;
+    if (inp.value === '') return;
+    let num = parseFloat(inp.value);
+    if (isNaN(num)) return;
+    num = _clampRuntimeVal(k, num);
+    out[s] = out[s] || {};
+    out[s][k] = num;
+  });
+  // range 兜底
+  document.querySelectorAll('#runtime-sections input[type=range][data-section]').forEach(inp => {
+    const s = inp.dataset.section, k = inp.dataset.key;
+    if (out[s] && out[s][k] != null) return;
+    let num = parseFloat(inp.value);
+    if (isNaN(num)) return;
+    out[s] = out[s] || {};
+    out[s][k] = _clampRuntimeVal(k, num);
+  });
+  // textarea 提示词
+  document.querySelectorAll('#runtime-sections textarea[data-section]').forEach(ta => {
+    const s = ta.dataset.section, k = ta.dataset.key;
+    out[s] = out[s] || {};
+    out[s][k] = ta.value;
+  });
+  // select bool
+  document.querySelectorAll('#runtime-sections select[data-section]').forEach(sel => {
+    const s = sel.dataset.section, k = sel.dataset.key;
+    out[s] = out[s] || {};
+    out[s][k] = sel.value === 'true';
+  });
+  return out;
+}
+
+/** 一键加压：让 Skill/团队演化「变强」的默认旋钮组合 */
+function applyEvolutionPressurePreset() {
+  _runtimeConfig = _runtimeConfig || {};
+  _runtimeConfig.habitat = Object.assign({}, _runtimeConfig.habitat || {}, {
+    abundance: 0.6,
+    predator_pressure: 0.15,
+    drift_prob: 0.18,
+    niche_capacity: 3,
+  });
+  _runtimeConfig.drill_economics = Object.assign({}, _runtimeConfig.drill_economics || {}, {
+    skill_idle_penalty: 1.5,
+    forage_miss_penalty: 2.8,
+    forage_gain: 9,
+    follow_bonus: 0.2,
+    help_hunger: 0.65,
+  });
+  _runtimeConfig.evolution_pressure = Object.assign({}, _runtimeConfig.evolution_pressure || {}, {
+    skill_idle_penalty: 1.5,
+    genome_carry_cost: 0.1,
+    min_steps_when_contract: 72,
+    min_gens_when_contract: 5,
+    prefer_forage_when_can_serve: 1,
+    predator_bias_unskilled: 2.5,
+    scarce_share_boost: 1.5,
+    same_pop_share_bias: 0.75,
+    sexual_selection_strength: 1.2,
+    freq_dep_strength: 0.6,
+    epistasis_strength: 0.25,
+  });
+  _runtimeConfig.metabolism = Object.assign({}, _runtimeConfig.metabolism || {}, {
+    senescence_rate: 0.004,
+  });
+  _runtimeConfig.learning = Object.assign({}, _runtimeConfig.learning || {}, {
+    genome_carry_cost: 0.1,
+    blind_learning_rate: 0.12,
+  });
+  _runtimeDirty = true;
+  renderRuntime();
+  toast('🎛 已套用加压预设（未保存——点「保存参数」生效；孪生页左侧可拖音量盘）');
+}
+
+function applyLooseHabitatPreset() {
+  _runtimeConfig = _runtimeConfig || {};
+  _runtimeConfig.habitat = Object.assign({}, _runtimeConfig.habitat || {}, {
+    abundance: 1.2,
+    predator_pressure: 0.04,
+    drift_prob: 0.1,
+    niche_capacity: 0,
+  });
+  _runtimeConfig.drill_economics = Object.assign({}, _runtimeConfig.drill_economics || {}, {
+    skill_idle_penalty: 0,
+  });
+  _runtimeConfig.evolution_pressure = Object.assign({}, _runtimeConfig.evolution_pressure || {}, {
+    skill_idle_penalty: 0,
+    prefer_forage_when_can_serve: 0,
+    min_steps_when_contract: 40,
+    min_gens_when_contract: 2,
+    sexual_selection_strength: 0,
+    freq_dep_strength: 0,
+    epistasis_strength: 0,
+  });
+  _runtimeConfig.metabolism = Object.assign({}, _runtimeConfig.metabolism || {}, {
+    senescence_rate: 0,
+  });
+  _runtimeDirty = true;
+  renderRuntime();
+  toast('🍃 已套用宽松生境（未保存）');
+}
+
+async function saveRuntime() {
+  const payload = _collectRuntime();
+  const d = await api.put('/api/v1/eco-runtime/config', payload);
+  if (d) {
+    _runtimeConfig = d;
+    _runtimeBaseline = JSON.parse(JSON.stringify(d));
+    _runtimeDirty = false;
+    renderRuntime();
+    toast('✅ 运行时参数已保存');
+  } else { toast('❌ 保存失败: ' + (api._lastError ? api._lastError.message : '未知错误')); }
+}
+
+async function resetRuntime() {
+  if (!confirm('恢复全部运行时参数为内置默认？当前自定义值会被清除。')) return;
+  const d = await api.post('/api/v1/eco-runtime/reset', {});
+  if (d) { _runtimeConfig = d; renderRuntime(); toast('↺ 已恢复默认'); }
+  else { toast('❌ 恢复失败'); }
+}
+
+// 初始化
+loadTTS();
+loadConfig();
+</script>
+</body>
+</html>

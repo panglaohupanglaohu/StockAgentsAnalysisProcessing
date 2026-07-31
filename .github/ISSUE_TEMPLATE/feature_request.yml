@@ -1,0 +1,50 @@
+name: 功能建议
+description: 提议一个有明确使用场景的改进
+title: "[Feature]: "
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 描述用户场景和当前阻碍，不要只写希望使用的技术。
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 期望结果
+      description: 用户最终应能完成什么？
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 主要区域
+      options:
+        - Agent Config / Teams
+        - Plaza
+        - Information Sources
+        - Dynamic HTML Reports
+        - Trading Simulation
+        - Developer Experience
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 建议的完成标准
+      placeholder: 使用 Given / When / Then 或可验证的清单。
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 已考虑的替代方案
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: 架构约束
+      options:
+        - label: 建议不会要求删除 Build System、AI Coding 或 Plaza。
+          required: true
+        - label: 如果涉及投资输出，我理解它只能用于模拟和研究。
+          required: true
