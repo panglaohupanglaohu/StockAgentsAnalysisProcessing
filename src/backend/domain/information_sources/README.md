@@ -1,5 +1,15 @@
 # Information sources domain
 
-本包将承载 `SourceConfig`、`SourceManifest`、`FetchBatch`、`EvidenceRecord`、`InformationPacket` 与 connector protocol。
+## T201（已实现）
 
-依赖方向：connector adapter 可以依赖这里；这里不能依赖 FastAPI、具体网页解析器或 TradingAgents。实现入口见 `TODOS.md` 的 T201—T206。
+- `models.py` — `SourceConfig` / `SourceManifest` / `FetchBatch` / `FetchItem` / `HealthResult`
+- `protocol.py` — `SourceConnector` Protocol + `SourceRegistry`
+- `ssrf.py` — scheme/host/IP/redirect SSRF guards
+- `connectors/` — `fixture`, `rss`, `web`, `json_api`
+- `scheduler.py` — 协议级 `fetch_many`（单来源失败隔离）
+
+依赖方向：connector 可依赖本包；本包不依赖 FastAPI 或 TradingAgents。
+
+## 后续
+
+`EvidenceRecord` / 去重落盘 / reputation 见 T203；目录研究见 Codex T202。

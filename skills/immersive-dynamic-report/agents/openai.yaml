@@ -1,0 +1,4 @@
+interface:
+  display_name: "沉浸式动态报告"
+  short_description: "将可追溯研究数据编排为沉浸式动态 HTML 阅读体验。"
+  default_prompt: "将本轮研究报告发布为可访问、可追溯、适合独立阅读页的沉浸式动态 HTML。"

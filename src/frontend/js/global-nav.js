@@ -16,10 +16,17 @@
     { id: 'memory',        label: 'Agent记忆',  href: '/agent-memory.html' },
     { id: 'digital-twin',  label: '数字孪生',   href: '/Agent-digital-twin.html?office3d=1' },
     { id: 'cost',          label: 'Token节省',  href: '/cost-dashboard.html' },
-    { id: 'pet',           label: '生态配置',   href: '/pet-config.html' }
+    { id: 'pet',           label: '生态配置',   href: '/pet-config.html' },
+    { id: 'data-intelligence', label: '数据采集/分析', href: '/data-intelligence.html' },
+    { id: 'investment-engine', label: '投资引擎', href: '/investment-engine.html' }
   ];
 
-  var script = document.querySelector('script[src*="global-nav.js"][data-page], script[data-page]');
+  // Resolve current page id with simple selectors first so test doubles and
+  // partial DOM mocks that only implement exact selector matching still work.
+  var script =
+    document.querySelector('script[src*="global-nav.js"][data-page]') ||
+    document.querySelector('script[data-page]') ||
+    document.querySelector('script[src*="global-nav.js"]');
   var currentId = script ? (script.getAttribute('data-page') || '') : '';
 
   function buildNavHTML() {
@@ -27,7 +34,7 @@
     for (var i = 0; i < PAGES.length; i++) {
       var p = PAGES[i];
       if (p.id === currentId) {
-        html += '<span class="cur" aria-current="page">' + p.label + '</span>';
+        html += '<span class="cur">' + p.label + '</span>';
       } else {
         html += '<a href="' + p.href + '">' + p.label + '</a>';
       }

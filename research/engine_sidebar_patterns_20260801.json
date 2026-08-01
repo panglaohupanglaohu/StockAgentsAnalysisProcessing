@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01",
+  "product": "StockAgents investment-engine sidebar",
+  "storage_key": "sa_engine_sidebar_v1",
+  "accent": "#f97316",
+  "rail_bg": "#0b1220",
+  "items": [
+    {"id": "overview", "label": "首页", "target": "engine-overview", "group": "primary", "icon": "home"},
+    {"id": "analysis", "label": "分析", "target": "engine-config", "group": "primary", "icon": "chart"},
+    {"id": "news", "label": "信息流", "target": "engine-context", "group": "primary", "icon": "feed", "badge": "docs_ai"},
+    {"id": "performance", "label": "市场表现", "target": "engine-dashboard", "group": "primary", "icon": "pulse"},
+    {"id": "authors", "label": "我的 Agent", "target": "engine-assembly", "group": "primary", "icon": "agents", "badge": "modules_team"},
+    {"id": "research", "label": "研究组", "target": "engine-assembly", "group": "research", "icon": "layers", "badge": "sources_selected"},
+    {"id": "timeline", "label": "运行时间线", "target": "engine-timeline", "group": "secondary", "icon": "list"},
+    {"id": "health", "label": "运行时健康", "target": "engine-health", "group": "secondary", "icon": "heart"},
+    {"id": "portfolio", "label": "纸面组合", "target": "engine-portfolio", "group": "primary", "icon": "wallet"}
+  ],
+  "preserved_control_ids": [
+    "sector", "ticker", "trade_date", "cash", "debate", "risk", "mode",
+    "btn-create", "btn-start", "btn-cancel", "btn-engine-start",
+    "run-id", "run-status", "engine-start-hint",
+    "source-drop", "source-selected", "source-empty", "source-library",
+    "module-library", "assembly-count", "dynamic-dashboard",
+    "judgment-card", "plan-card", "revenue-card", "risk-card", "portfolio-card", "context-card",
+    "timeline", "reports", "portfolio", "runtime-health"
+  ],
+  "anti_patterns": [
+    "copy third-party brand assets",
+    "remote icon CDNs",
+    "store secrets in localStorage",
+    "duplicate config forms",
+    "block start on badge fetch failure"
+  ]
+}

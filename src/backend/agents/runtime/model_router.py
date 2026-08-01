@@ -157,6 +157,10 @@ def clamp_model_to_global(
 
     规则：配置了全局 LLM 或默认 prefer_global → 永远返回全局 model，
     禁止把 deepseek-v4-pro 等写进上游。
+
+    例外：AG_MODEL_ROUTE_ALLOW_SWITCH=1 且当前为 deepseek 多档网关时，
+    允许 economy/standard 改写 model 名（如 flash ↔ pro），即使用户已设
+    全局默认。非 deepseek 网关仍强制全局 model。
     """
     primary = (config_model or "").strip()
     provider = (config_provider or "").strip()
@@ -165,6 +169,14 @@ def clamp_model_to_global(
     routed = (routed or "").strip()
     if not primary:
         return routed
+    allow_switch = (os.getenv("AG_MODEL_ROUTE_ALLOW_SWITCH") or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    if allow_switch and _is_deepseek_multi_tier(primary, provider, base_url):
+        return routed or primary
     if prefer_global_model():
         return primary
     if not _is_deepseek_multi_tier(primary, provider, base_url):

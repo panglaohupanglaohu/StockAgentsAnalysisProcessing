@@ -14,7 +14,7 @@ class SourceConnector(Protocol):
     ) -> FetchBatch: ...
 ```
 
-Registry 根据 manifest 创建 connector。调度器只依赖协议，不按 RSS、网页或 JSON API 写分支。用户可以启停、排序和配置任意数量来源；来源凭据只保存环境变量名称。
+Registry 根据 manifest 创建 connector。调度器只依赖协议，不按 RSS、网页或 JSON API 写分支。用户可以在 `/data-intelligence.html` 启停、排序和配置任意数量来源；来源凭据只保存环境变量名称。
 
 ## 首批类型
 
@@ -35,4 +35,4 @@ Registry 根据 manifest 创建 connector。调度器只依赖协议，不按 RS
 
 ## 输出边界
 
-Connector 只采集和规范化，不生成投资结论。团队消费 `EvidenceRecord`，发布器生成 `InformationPacket`；投资 adapter 只读取明确 `as_of` 的 packet。
+Connector 只采集和规范化，不生成投资结论。团队消费 `EvidenceRecord`，发布器生成 `InformationPacket`；AI 60 秒与世界趋势动态 HTML 都在数据采集/分析页面内部展示，投资 adapter 只读取明确 `as_of` 的 packet。

@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Capital Overview Deck"
+  short_description: "把多源情报运行变成深度可追溯的研究卡片报告"
+  default_prompt: "Use $ai-capital-overview-deck to turn this research run into a rich evidence-cited overview deck."

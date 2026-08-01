@@ -9,7 +9,7 @@ Agent Team API Routes - 双团队管理 REST API
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional
 
 router = APIRouter(prefix="/api/v1/agent-teams", tags=["Agent Teams"])
@@ -46,6 +46,45 @@ class FeedbackSubmission(BaseModel):
     severity: str = "medium"
     title: str
     detail: str
+
+
+class EvolutionCloseRequest(BaseModel):
+    """Close a verified evolution item with audit fields."""
+
+    reason: str = ""
+    verify_conclusion: str = ""
+    item_ids: Optional[List[str]] = None
+
+
+class EvolutionCompleteRequest(BaseModel):
+    """Mark build complete — requires code_changes and/or artifact_dir."""
+
+    code_changes: List[str] = []
+    artifact_dir: str = ""
+
+
+class AutoTriageRequest(BaseModel):
+    """自动诊断请求 — top_n 限定 1..10。"""
+
+    team_id: str = "build_system"
+    top_n: int = Field(default=5, ge=1, le=10)
+
+
+class DatasetGenerateRequest(BaseModel):
+    """技能评估数据集生成 — count 限定 1..30。"""
+
+    skill_id: str
+    team_id: str = "build_system"
+    count: int = Field(default=15, ge=1, le=30)
+
+
+class DatasetImportKBRequest(BaseModel):
+    """从知识库导入评估用例 — max_examples 限定 1..50。"""
+
+    skill_id: str
+    skill_name: str = ""
+    dataset_id: str = ""
+    max_examples: int = Field(default=20, ge=1, le=50)
 
 
 # ---------------------------------------------------------------------------
@@ -299,18 +338,23 @@ async def evolution_summary():
 
 @router.get("/evolution/items")
 async def evolution_items(status: Optional[str] = None):
-    """获取演进项列表，可按状态过滤。"""
+    """获取演进项列表，可按状态过滤（分页 envelope）。"""
     if not _evolution_engine:
         raise HTTPException(404, "Evolution engine not registered")
-    return _evolution_engine.get_evolution_items(status=status)
+    raw = _evolution_engine.get_evolution_items(status=status)
+    if isinstance(raw, dict) and "items" in raw:
+        return raw
+    items = raw if isinstance(raw, list) else list(raw or [])
+    return {"items": items, "total": len(items), "limit": len(items), "offset": 0}
 
 
 @router.get("/evolution/rules")
 async def evolution_rules():
-    """获取审查规则列表。"""
+    """获取审查规则列表（分页 envelope）。"""
     if not _evolution_engine:
         raise HTTPException(404, "Evolution engine not registered")
-    return [r.to_dict() for r in _evolution_engine.audit_rules]
+    items = [r.to_dict() for r in _evolution_engine.audit_rules]
+    return {"items": items, "total": len(items), "limit": len(items), "offset": 0}
 
 
 @router.post("/evolution/audit")
@@ -347,13 +391,23 @@ async def evolution_verify():
 
 @router.get("/evolution/items/{item_id}")
 async def evolution_item_detail(item_id: str):
-    """获取单个演进项详情。"""
+    """获取单个演进项详情（含关联 EvidenceRun 列表）。"""
     if not _evolution_engine:
         raise HTTPException(404, "Evolution engine not registered")
     item = _evolution_engine.evolution_items.get(item_id)
     if not item:
         raise HTTPException(404, f"Item '{item_id}' not found")
-    return item.to_dict()
+    payload = item.to_dict()
+    try:
+        from agents.evidence_store import EvidenceQuery, get_evidence_store
+
+        runs = get_evidence_store().query_evidence_sync(
+            EvidenceQuery(evolution_item_id=item_id, limit=50)
+        )
+        payload["evidence_runs"] = [r.to_dict() for r in runs]
+    except Exception:
+        payload.setdefault("evidence_runs", [])
+    return payload
 
 
 @router.post("/evolution/items/{item_id}/progress")
@@ -368,37 +422,79 @@ async def evolution_mark_progress(item_id: str):
 
 
 @router.post("/evolution/items/{item_id}/complete")
-async def evolution_mark_complete(item_id: str):
-    """标记演进项构建完成，进入待验证。"""
+async def evolution_mark_complete(
+    item_id: str,
+    body: Optional[EvolutionCompleteRequest] = None,
+):
+    """标记演进项构建完成，进入待验证。需要 code_changes 或 artifact_dir。"""
     if not _evolution_engine:
         raise HTTPException(404, "Evolution engine not registered")
-    ok = _evolution_engine.mark_build_complete(item_id)
+    body = body or EvolutionCompleteRequest()
+    ok = _evolution_engine.mark_build_complete(
+        item_id,
+        code_changes=list(body.code_changes or []),
+        artifact_dir=body.artifact_dir or "",
+    )
     if not ok:
-        raise HTTPException(404, f"Item '{item_id}' not found")
+        item = _evolution_engine.evolution_items.get(item_id)
+        if not item:
+            raise HTTPException(404, f"Item '{item_id}' not found")
+        raise HTTPException(
+            400,
+            "Build complete requires code_changes and/or artifact_dir as evidence",
+        )
     return {"status": "ok", "item_id": item_id, "new_status": "verify_pending"}
 
 
-@router.post("/evolution/close-verified")
-async def evolution_close_verified():
-    """关闭所有已验证通过的演进项。"""
+@router.post("/evolution/items/{item_id}/close")
+async def evolution_close_item(item_id: str, body: Optional[EvolutionCloseRequest] = None):
+    """关闭单条已验证演进项并记录原因/结论。"""
     if not _evolution_engine:
         raise HTTPException(404, "Evolution engine not registered")
-    closed = _evolution_engine.close_verified()
+    body = body or EvolutionCloseRequest()
+    item = _evolution_engine.evolution_items.get(item_id)
+    if not item:
+        raise HTTPException(404, f"Item '{item_id}' not found")
+    closed = _evolution_engine.close_verified_items(
+        item_ids=[item_id],
+        close_reason=body.reason or "",
+        verify_conclusion=body.verify_conclusion or "",
+    )
+    if not closed:
+        raise HTTPException(400, f"Item '{item_id}' is not in verified state or close failed")
+    return {
+        "closed": closed,
+        "count": len(closed),
+        "item_id": item_id,
+        "reason": body.reason,
+        "verify_conclusion": body.verify_conclusion,
+    }
+
+
+@router.post("/evolution/close-verified")
+async def evolution_close_verified(body: Optional[EvolutionCloseRequest] = None):
+    """关闭所有（或指定）已验证通过的演进项。"""
+    if not _evolution_engine:
+        raise HTTPException(404, "Evolution engine not registered")
+    body = body or EvolutionCloseRequest()
+    closed = _evolution_engine.close_verified_items(
+        item_ids=body.item_ids,
+        close_reason=body.reason or "",
+        verify_conclusion=body.verify_conclusion or "",
+    )
     return {"closed": closed, "count": len(closed)}
 
 
 @router.post("/evolution/close")
-async def evolution_close():
+async def evolution_close(body: Optional[EvolutionCloseRequest] = None):
     """关闭所有已验证通过的演进项 (close-verified 别名)。"""
-    if not _evolution_engine:
-        raise HTTPException(404, "Evolution engine not registered")
-    closed = _evolution_engine.close_verified()
-    return {"closed": closed, "count": len(closed)}
+    return await evolution_close_verified(body)
+
 
 
 @router.get("/evolution/history")
 async def evolution_audit_history():
-    """获取审查历史记录。"""
+    """获取审查历史记录（分页 envelope）。"""
     if not _evolution_engine:
         raise HTTPException(404, "Evolution engine not registered")
     raw = _evolution_engine.get_audit_history()
@@ -409,7 +505,7 @@ async def evolution_audit_history():
         entry.setdefault("timestamp", entry.pop("time", None))
         entry.setdefault("total", (entry.get("passed") or 0) + (entry.get("failed") or 0) + (entry.get("skipped") or 0))
         result.append(entry)
-    return result
+    return {"items": result, "total": len(result), "limit": len(result), "offset": 0}
 
 
 @router.get("/evolution/analytics")
@@ -529,10 +625,20 @@ async def evolution_monitoring():
 
 @router.get("/evolution/audit-trail")
 async def evolution_audit_trail(event_type: Optional[str] = None, limit: int = 50):
-    """获取审计轨迹日志。"""
+    """获取审计轨迹日志（分页 envelope）。"""
     if not _evolution_engine:
         raise HTTPException(404, "Evolution engine not registered")
-    return _evolution_engine.get_audit_trail(event_type=event_type, limit=limit)
+    raw = _evolution_engine.get_audit_trail(event_type=event_type, limit=limit)
+    if isinstance(raw, dict) and "items" in raw:
+        return raw
+    items = raw if isinstance(raw, list) else list(raw or [])
+    return {
+        "items": items,
+        "total": len(items),
+        "limit": limit,
+        "offset": 0,
+        "has_more": False,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -608,9 +714,20 @@ async def evolution_optimize(body: Dict[str, Any]):
 
 @router.get("/evolution/optimize/runs")
 async def evolution_optimize_runs(target_type: Optional[str] = None, limit: int = 20):
-    """列出优化运行记录."""
+    """列出优化运行记录（分页 envelope）."""
     from agents.evolution.optimizer import list_runs
-    return list_runs(target_type=target_type, limit=limit)
+
+    raw = list_runs(target_type=target_type, limit=limit)
+    if isinstance(raw, dict) and "items" in raw:
+        return raw
+    items = raw if isinstance(raw, list) else list(raw or [])
+    return {
+        "items": items,
+        "total": len(items),
+        "limit": limit,
+        "offset": 0,
+        "has_more": False,
+    }
 
 
 @router.get("/evolution/optimize/{run_id}")
@@ -709,24 +826,21 @@ async def evolution_skill_fitness(skill_id: str, team_id: str = "build_system"):
 
 
 @router.post("/evolution/auto-triage")
-async def evolution_auto_triage(body: Dict[str, Any] = None):
+async def evolution_auto_triage(body: AutoTriageRequest):
     """自动诊断 — 识别最需要优化的技能 (Phase 5)."""
     from agents.evolution.auto_triage import run_auto_triage
-    body = body or {}
-    team_id = body.get("team_id", "build_system")
-    top_n = min(body.get("top_n", 5), 10)
-    return await run_auto_triage(team_id=team_id, top_n=top_n)
+    return await run_auto_triage(team_id=body.team_id, top_n=body.top_n)
 
 
 @router.post("/evolution/dataset/generate")
-async def evolution_generate_dataset(body: Dict[str, Any]):
+async def evolution_generate_dataset(body: DatasetGenerateRequest):
     """为指定技能生成评估数据集."""
     from agents.evolution.dataset_builder import build_full_dataset
     from agents.skill_library import get_skill_library
 
-    skill_id = body.get("skill_id", "")
-    team_id = body.get("team_id", "build_system")
-    count = min(body.get("count", 15), 30)
+    skill_id = body.skill_id
+    team_id = body.team_id
+    count = body.count
 
     if not skill_id:
         raise HTTPException(400, "skill_id required")
@@ -802,14 +916,14 @@ async def evolution_dataset_manual(body: Dict[str, Any]):
 
 
 @router.post("/evolution/dataset/import-kb")
-async def evolution_dataset_import_kb(body: Dict[str, Any]):
+async def evolution_dataset_import_kb(body: DatasetImportKBRequest):
     """从知识库抽取评估用例."""
     from agents.evolution.dataset_builder import EvalDataset, mine_knowledge_base
 
-    skill_id = body.get("skill_id", "")
-    skill_name = body.get("skill_name", skill_id)
-    dataset_id = body.get("dataset_id", "")
-    max_examples = min(body.get("max_examples", 20), 50)
+    skill_id = body.skill_id
+    skill_name = body.skill_name or skill_id
+    dataset_id = body.dataset_id
+    max_examples = body.max_examples
 
     if not skill_id:
         raise HTTPException(400, "skill_id required")

@@ -623,7 +623,7 @@ class SkillEvolver:
             return {
                 "error": "llm_unusable",
                 "error_detail": (
-                    "LLM 返回了不可用回退文本（常见：Key 无效或模型不被上游接受）。"
+                    "LLM 返回了不可用的回退文本（常见：Key 无效或模型不被上游接受）。"
                     f" model={getattr(live_cfg, 'model', '')}"
                 ),
                 "raw": raw,
@@ -684,7 +684,7 @@ class SkillEvolver:
         if self._is_unusable_evolution_text(improved):
             return {
                 "error": "llm_unusable",
-                "error_detail": "改进指令含不可用回退文本，已拒绝",
+                "error_detail": "改进指令含不可用的回退文本，已拒绝",
             }
         if self._is_language_flip(original, improved):
             return {

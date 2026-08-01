@@ -1,5 +1,10 @@
 # Investment simulation domain
 
-本包将承载 `SimulationRun`、`RunConfigSnapshot`、`DecisionRecord`、`PortfolioState`、`OrderIntent`、成本/滑点和 checkpoint 元数据。
+已实现（T401–T406）：
 
-领域对象不暴露 TradingAgents 内部 graph state，并且所有输入必须带 `as_of` 决策时间。真实券商执行不属于当前范围。
+- `models.py` — `InvestmentSimulation` / `InvestmentEvent`（无 Plaza ID）
+- `portfolio.py` — Paper Portfolio（BUY/SELL/HOLD，无真实券商）
+- `store.py` — 运行持久化、事件 jsonl、checkpoint 游标
+- `orchestrator.py` — 创建/启动/取消、fixture graph、预算门禁、事件流
+
+与 `integrations/tradingagents` 适配层协作；API 见 `domain/api_routes.py`。

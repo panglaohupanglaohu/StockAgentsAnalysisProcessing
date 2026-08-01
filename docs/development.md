@@ -29,16 +29,20 @@ python main.py --host 127.0.0.1 --port 8080 --reload
 ## 测试
 
 ```bash
-python -m pytest
-npm run test:frontend
+make test-smoke
+make test
 ```
 
-只跑认证与 Plaza 保护用例：
+`test-smoke` 是 GitHub CI 的强制保护集；`test` 是全量套件。当前遗留失败和修复入口见 [test-baseline.md](test-baseline.md)，新改动不得扩大该清单。
+
+只跑当前认证、团队与 Plaza 核心烟测：
 
 ```bash
 python -m pytest src/backend/tests -k 'auth or login or plaza or team'
 npx vitest run src/frontend/__tests__/login-page-flow.test.js src/frontend/__tests__/plaza-action-paths.test.js
 ```
+
+后续 T003 会把 [7 个原页面冻结保护面](legacy-surfaces.md) 全部加入强制回归；在此之前也不得把未覆盖等同于允许修改。
 
 ## 配置
 

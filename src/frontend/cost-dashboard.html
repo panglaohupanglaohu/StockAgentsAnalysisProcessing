@@ -849,7 +849,7 @@
       if (!el) return;
       var win = (document.getElementById('filter-window') || {}).value || '24h';
       try {
-        var r = await fetch('/api/v1/cost/tokens/by-task?window=' + encodeURIComponent(win) + '&limit=20', { credentials: 'same-origin' });
+        var r = await (window._agFetch || fetch)('/api/v1/cost/tokens/by-task?window=' + encodeURIComponent(win) + '&limit=20', { credentials: 'same-origin' });
         var d = await r.json();
         var items = (d && d.items) || [];
         if (!items.length) {
@@ -902,7 +902,7 @@
       var el = document.getElementById('tg-cache-body');
       if (!el) return;
       try {
-        var r = await fetch('/api/v1/cost/token-governance/cache-stats', { credentials: 'same-origin' });
+        var r = await (window._agFetch || fetch)('/api/v1/cost/token-governance/cache-stats', { credentials: 'same-origin' });
         var d = await r.json();
         var c = (d && d.cache) || {};
         el.innerHTML = 'size <b>' + (c.size || 0) + '</b>/' + (c.max_size || 0)
@@ -925,7 +925,7 @@
         { role: 'tool', content: '{"nodes":' + 'x'.repeat(5000) + '}' },
       ];
       try {
-        var r = await fetch('/api/v1/cost/token-governance/compress-preview', {
+        var r = await (window._agFetch || fetch)('/api/v1/cost/token-governance/compress-preview', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: demo }),
@@ -949,13 +949,13 @@
         { role: 'user', content: 'list open alerts' },
       ];
       try {
-        await fetch('/api/v1/cost/token-governance/cache-warm', {
+        await (window._agFetch || fetch)('/api/v1/cost/token-governance/cache-warm', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: demo }),
         });
         // 二次 lookup 制造 hit
-        await fetch('/api/v1/cost/token-governance/compress-preview', {
+        await (window._agFetch || fetch)('/api/v1/cost/token-governance/compress-preview', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: demo }),
@@ -971,7 +971,7 @@
       var el = document.getElementById('tg-route-body');
       if (!el) return;
       try {
-        var r = await fetch('/api/v1/cost/token-governance/router-status', { credentials: 'same-origin' });
+        var r = await (window._agFetch || fetch)('/api/v1/cost/token-governance/router-status', { credentials: 'same-origin' });
         var d = await r.json();
         if (!d || !d.ok) {
           el.innerHTML = _tgEsc((d && d.error) || 'router unavailable');
@@ -995,7 +995,7 @@
       var el = document.getElementById('tg-budget-body');
       if (!el) return;
       try {
-        var r = await fetch('/api/v1/cost/token-governance/budget', { credentials: 'same-origin' });
+        var r = await (window._agFetch || fetch)('/api/v1/cost/token-governance/budget', { credentials: 'same-origin' });
         var d = await r.json();
         var b = (d && d.budget) || {};
         el.innerHTML = 'session≤<b>' + (b.per_session_max || 0) + '</b>'
@@ -1024,7 +1024,7 @@
         on_exceed: (document.getElementById('tg-b-exceed') || {}).value || 'halt',
       };
       try {
-        var r = await fetch('/api/v1/cost/token-governance/budget', {
+        var r = await (window._agFetch || fetch)('/api/v1/cost/token-governance/budget', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -1102,7 +1102,7 @@
           + encodeURIComponent(teamId)
           + (ctx.taskId ? '&task_id=' + encodeURIComponent(ctx.taskId) : '')
           + '&limit=5';
-        var r = await fetch(url, { credentials: 'same-origin' });
+        var r = await (window._agFetch || fetch)(url, { credentials: 'same-origin' });
         var d = await r.json();
         var prod = (d && d.production) || null;
         var n = (d && d.count) || 0;
@@ -1201,7 +1201,7 @@
         + (taskId ? '&task_id=' + encodeURIComponent(taskId) : '')
         + '&limit=40';
       try {
-        var r = await fetch(url, { credentials: 'same-origin' });
+        var r = await (window._agFetch || fetch)(url, { credentials: 'same-origin' });
         var d = await r.json();
         var items = (d && d.candidates) || [];
         _paintBidPipe(items);
@@ -1395,7 +1395,7 @@
       var taskInp = document.getElementById('eco-bid-task');
       if (taskInp && taskId) taskInp.value = taskId;
       try {
-        var tr = await fetch('/api/v1/agent-config/teams', { credentials: 'same-origin' });
+        var tr = await (window._agFetch || fetch)('/api/v1/agent-config/teams', { credentials: 'same-origin' });
         var teams = await tr.json();
         if (!Array.isArray(teams)) teams = teams.items || teams.teams || [];
         if (sel) {
@@ -1500,7 +1500,7 @@
       try {
         var url = '/api/v1/eco-runtime/bid-candidates/' + encodeURIComponent(candidateId)
           + (teamId ? '?team_id=' + encodeURIComponent(teamId) : '');
-        var r = await fetch(url, { credentials: 'same-origin' });
+        var r = await (window._agFetch || fetch)(url, { credentials: 'same-origin' });
         if (!r.ok) {
           det.innerHTML = '<div class="tg-warn">竞价席 HTTP ' + r.status + ' — 确认 eco-runtime 可达</div>';
           return;
@@ -1521,7 +1521,7 @@
         var peerHtml = '';
         try {
           if (c.team_id && c.task_id) {
-            var pr = await fetch(
+            var pr = await (window._agFetch || fetch)(
               '/api/v1/eco-runtime/bid-candidates?team_id=' + encodeURIComponent(c.team_id)
               + '&task_id=' + encodeURIComponent(c.task_id) + '&limit=20',
               { credentials: 'same-origin' },
@@ -1654,7 +1654,7 @@
 
     window.recheckEcoBidQuality = async function (candidateId, teamId) {
       try {
-        var r = await fetch('/api/v1/eco-runtime/bid-candidates/' + encodeURIComponent(candidateId)
+        var r = await (window._agFetch || fetch)('/api/v1/eco-runtime/bid-candidates/' + encodeURIComponent(candidateId)
           + '/quality-check?team_id=' + encodeURIComponent(teamId || ''), {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -1683,7 +1683,7 @@
       if (tb && tb.value !== '') body.tokens_baseline = Number(tb.value);
       if (tc && tc.value !== '') body.tokens_candidate = Number(tc.value);
       try {
-        var r = await fetch('/api/v1/eco-runtime/bid-candidates/' + encodeURIComponent(candidateId)
+        var r = await (window._agFetch || fetch)('/api/v1/eco-runtime/bid-candidates/' + encodeURIComponent(candidateId)
           + '?team_id=' + encodeURIComponent(teamId || ''), {
           method: 'PATCH',
           credentials: 'same-origin',
@@ -1704,7 +1704,7 @@
     window.lockEcoBid = async function (candidateId, teamId) {
       if (!confirm('确认棘轮锁定该候选？\n仅 quality_passed 且 token≤baseline（若已填）可锁定。\n原则：先适者后省钱。')) return;
       try {
-        var r = await fetch('/api/v1/eco-runtime/bid-candidates/' + encodeURIComponent(candidateId)
+        var r = await (window._agFetch || fetch)('/api/v1/eco-runtime/bid-candidates/' + encodeURIComponent(candidateId)
           + '/lock?team_id=' + encodeURIComponent(teamId || ''), {
           method: 'POST',
           credentials: 'same-origin',
@@ -1734,7 +1734,7 @@
       const esc = window.escapeHtml || function (s) { return String(s == null ? '' : s); };
       const gradeColors = { A: '#6bc47f', B: '#7fb88a', C: '#d8a657', D: '#e0a062', E: '#e07070' };
       const get = function (url) {
-        return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+        return (window._agFetch || fetch)(url, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
       };
       const results = await Promise.all([
         get('/api/v1/agent-teams/evolution/summary'),
@@ -1819,7 +1819,7 @@
 
       if (type === 'rules') {
         var data = await (function () {
-          return fetch('/api/v1/agent-teams/evolution/rules?limit=100', { credentials: 'same-origin' })
+          return (window._agFetch || fetch)('/api/v1/agent-teams/evolution/rules?limit=100', { credentials: 'same-origin' })
             .then(function (r) { return r.ok ? r.json() : null; })
             .catch(function () { return null; });
         })();
@@ -1845,7 +1845,7 @@
       } else if (type === 'verify') {
         // 验证函数 — 从 evolution/status 获取 verify_registry 信息
         var st = await (function () {
-          return fetch('/api/v1/agent-teams/evolution/status', { credentials: 'same-origin' })
+          return (window._agFetch || fetch)('/api/v1/agent-teams/evolution/status', { credentials: 'same-origin' })
             .then(function (r) { return r.ok ? r.json() : null; })
             .catch(function () { return null; });
         })();
@@ -1864,7 +1864,7 @@
       } else if (type === 'items') {
         // 演进项 — 从 evolution/items 获取完整列表
         var itemData = await (function () {
-          return fetch('/api/v1/agent-teams/evolution/items?limit=100', { credentials: 'same-origin' })
+          return (window._agFetch || fetch)('/api/v1/agent-teams/evolution/items?limit=100', { credentials: 'same-origin' })
             .then(function (r) { return r.ok ? r.json() : null; })
             .catch(function () { return null; });
         })();
@@ -1897,7 +1897,7 @@
     // Token 优化建议
     async function loadTokenOptimization() {
       try {
-        const resp = await fetch('/api/v1/cost/by-team', { credentials: 'same-origin' });
+        const resp = await (window._agFetch || fetch)('/api/v1/cost/by-team', { credentials: 'same-origin' });
         const data = await resp.json();
         const teams = (data.teams || []).sort((a, b) => (b.tokens || 0) - (a.tokens || 0)).slice(0, 5);
         const el = document.getElementById('token-hotspots');
@@ -1932,7 +1932,7 @@
     // ── P8.5: 棘轮状态加载（从 Token cost_efficiency 棘轮读取）──
     async function loadRatchetStatus() {
       try {
-        var resp = await fetch('/api/v1/cost/tokens/ratchet', { credentials: 'same-origin' });
+        var resp = await (window._agFetch || fetch)('/api/v1/cost/tokens/ratchet', { credentials: 'same-origin' });
         if (!resp.ok) return;
         var r = await resp.json();
         var metrics = r.metrics || [];
@@ -1987,7 +1987,7 @@
 
       if (step === 'audit') {
         try {
-          var resp = await fetch('/api/v1/cost/tokens/ratchet', { credentials: 'same-origin' });
+          var resp = await (window._agFetch || fetch)('/api/v1/cost/tokens/ratchet', { credentials: 'same-origin' });
           if (resp.ok) {
             var r = await resp.json();
             panel.innerHTML += '<br><span style="color:var(--koke)">当前 cost_efficiency 棘轮: ' + (r.total || 0) + ' 条</span>';

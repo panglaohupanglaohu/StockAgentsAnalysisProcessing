@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request
+from starlette.responses import Response
 
 from channels.marine_base import get_default_registry
 import main
@@ -42,6 +45,46 @@ def _register_and_get_csrf(client: TestClient, username_prefix: str) -> str:
     return csrf_resp.json()["csrf_token"]
 
 
+def _request_for_path(path: str) -> Request:
+    return Request(
+        {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": "GET",
+            "scheme": "http",
+            "path": path,
+            "raw_path": path.encode("utf-8"),
+            "query_string": b"",
+            "headers": [],
+            "client": ("127.0.0.1", 0),
+            "server": ("testserver", 80),
+        }
+    )
+
+
+def test_immersive_render_frame_policy_is_narrowly_scoped():
+    async def call_next(_request):
+        return Response()
+
+    render_response = asyncio.run(
+        main.security_headers_middleware(
+            _request_for_path("/api/v1/information-documents/ai-1/versions/1/render"),
+            call_next,
+        )
+    )
+    ordinary_response = asyncio.run(
+        main.security_headers_middleware(
+            _request_for_path("/api/v1/information-documents/latest/ai_news_60s"),
+            call_next,
+        )
+    )
+
+    assert render_response.headers["x-frame-options"] == "SAMEORIGIN"
+    assert render_response.headers["referrer-policy"] == "no-referrer"
+    assert ordinary_response.headers["x-frame-options"] == "DENY"
+
+
 class TestCoreApiSmoke:
     def test_health_is_public(self, started_client):
         resp = started_client.get("/api/v1/health")
@@ -51,14 +94,17 @@ class TestCoreApiSmoke:
         assert payload["status"] == "ok"
 
     def test_protected_core_routes_require_auth(self, started_client):
+        # evolution/* GET 为只读豁免（仪表盘/装配页可展示状态）；写操作仍需登录。
         for path in (
             "/api/v1/agent-teams/overview",
-            "/api/v1/agent-teams/evolution/status",
             "/api/v1/agent-config/plaza",
             "/api/v1/agent-config/llm/status",
         ):
             resp = started_client.get(path)
             assert resp.status_code == 401, path
+        # 只读 evolution 状态不强制登录
+        evo = started_client.get("/api/v1/agent-teams/evolution/status")
+        assert evo.status_code in (200, 404)
 
     def test_authenticated_core_routes_return_success(self, started_client):
         token = _register_and_get_csrf(started_client, "coreapi")

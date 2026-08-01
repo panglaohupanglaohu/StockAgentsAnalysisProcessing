@@ -314,3 +314,15 @@ class ToolRegistry:
     def unregister_tool(self, tool_id: str) -> bool:
         """Remove a tool from the registry."""
         return self._tools.pop(tool_id, None) is not None
+
+
+_default_tool_registry: Optional[ToolRegistry] = None
+
+
+def get_tool_registry() -> ToolRegistry:
+    """Process-wide ToolRegistry with default catalog loaded."""
+    global _default_tool_registry
+    if _default_tool_registry is None:
+        _default_tool_registry = ToolRegistry()
+        _default_tool_registry.load_defaults()
+    return _default_tool_registry

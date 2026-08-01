@@ -10,6 +10,7 @@
   "scripts": {
     "test": "npm run test:frontend",
     "test:frontend": "vitest run --config vitest.config.js",
+    "test:frontend:smoke": "vitest run --config vitest.config.js src/frontend/__tests__/login-page-flow.test.js src/frontend/__tests__/agent-config.test.js src/frontend/__tests__/team-unified.test.js src/frontend/__tests__/plaza-action-paths.test.js src/frontend/__tests__/plaza-runtime-helpers.test.js src/frontend/__tests__/new-pages-nav.test.js src/frontend/__tests__/engine-cockpit.test.js",
     "test:frontend:watch": "vitest --config vitest.config.js"
   },
   "devDependencies": {

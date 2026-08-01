@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "channel": "ai_news_60s",
+  "researched_at": "2026-08-01",
+  "template": {
+    "headline": "string — 一句话总览",
+    "bullets": [
+      {
+        "text": "string — 单条快讯",
+        "label": "fact|opinion|analysis|inference|scenario",
+        "uncertainty": "string — 必填",
+        "citations": [
+          {
+            "url": "https://...",
+            "title": "string",
+            "fetched_at": "ISO-8601",
+            "published_at": "ISO-8601|null",
+            "content_hash": "sha256|null"
+          }
+        ]
+      }
+    ],
+    "why_it_matters": ["LabeledClaim[] — min 1"],
+    "related_companies": ["string[] — 非投资建议"],
+    "risks_and_counterpoints": ["LabeledClaim[] — min 1"],
+    "citations": ["Citation[] — min 1"],
+    "data_cutoff": "ISO-8601",
+    "run_id": "string",
+    "disclaimer": "本内容仅供研究参考，不构成投资建议。"
+  },
+  "style_constraints": {
+    "no_voice_clone": true,
+    "no_verbatim_copy": true,
+    "max_bullets": 8,
+    "prefer_bullets": 5,
+    "require_cross_check_for_high_impact": true
+  }
+}

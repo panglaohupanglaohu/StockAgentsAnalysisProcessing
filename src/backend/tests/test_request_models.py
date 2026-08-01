@@ -199,13 +199,14 @@ class TestAgentConfigRequestModels:
         started = {}
         monitored = []
 
-        def fake_start_session(session_id, prompt, cfg, agent, task_id):
+        def fake_start_session(session_id, prompt, cfg, agent, task_id, **kwargs):
             started.update(
                 {
                     "session_id": session_id,
                     "prompt": prompt,
                     "agent_id": agent.agent_id,
                     "task_id": task_id,
+                    "team_id": kwargs.get("team_id"),
                 }
             )
 

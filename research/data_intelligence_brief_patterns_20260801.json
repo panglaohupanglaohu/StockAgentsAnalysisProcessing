@@ -1,0 +1,48 @@
+{
+  "research_date": "2026-08-01",
+  "timezone": "Asia/Shanghai",
+  "owner": "Codex",
+  "consumer": "Grok",
+  "scope": "data-intelligence.html conclusion-first brief",
+  "design_decisions": [
+    "结论层优先于过程层",
+    "In Focus 只在内部横向滚动，不撑破页面",
+    "热门分析与趋势新闻按支持度、新近度、影响排序",
+    "独到见解必须显示事实/分析/推断/反证链",
+    "每条结论携带 as_of、evidence_count、source_domains、confidence",
+    "证据不足时输出暂无可确认结论"
+  ],
+  "run_brief_schema": {
+    "headline": "string",
+    "bullets": ["string"],
+    "focus_items": ["Insight"],
+    "hot_analysis": ["Insight"],
+    "trending_news": ["Insight"],
+    "distinctive_insights": ["Insight"],
+    "evidence_limits": ["string"]
+  },
+  "insight_schema": {
+    "kind": "fact|analysis|inference|counter",
+    "title": "string",
+    "body": "string",
+    "confidence": "number 0..1",
+    "evidence_ids": ["string"],
+    "source_domains": ["string"],
+    "as_of": "ISO-8601",
+    "impact": "string"
+  },
+  "sources": [
+    {"title":"Google Analytics Help","url":"https://support.google.com/analytics/answer/9925281?hl=en","accessed":"2026-08-01","use":"card-based dashboard and adjustable visualization"},
+    {"title":"Material Design Cards","url":"https://m2.material.io/components/cards/android","accessed":"2026-08-01","use":"dashboard-style card collection"},
+    {"title":"Evidence Docs","url":"https://docs.evidence.dev/","accessed":"2026-08-01","use":"reports and decision-support data products"},
+    {"title":"Data Provenance Initiative","url":"https://www.dataprovenance.org/","accessed":"2026-08-01","use":"source-to-use provenance"},
+    {"title":"Google Data Cards Playbook","url":"https://sites.research.google/datacardsplaybook/activities/assemble-template.pdf","accessed":"2026-08-01","use":"dataset snapshot and transparent documentation"},
+    {"title":"Nielsen Norman Group Site Map Usability","url":"https://s3.amazonaws.com/media.nngroup.com/media/reports/free/Site_Map_Usability_2nd_Edition.pdf","accessed":"2026-08-01","use":"information hierarchy and progressive disclosure"}
+  ],
+  "guardrails": [
+    "no fabricated fixed news",
+    "no future information beyond as_of",
+    "no certainty language when evidence is weak or conflicting",
+    "research/simulation only; not investment advice"
+  ]
+}

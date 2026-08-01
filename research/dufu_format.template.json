@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "channel": "dufu_world_intel",
+  "researched_at": "2026-08-01",
+  "template": {
+    "what_happened": "LabeledClaim",
+    "timeline": ["LabeledClaim[]"],
+    "drivers": ["LabeledClaim[]"],
+    "data_trends": ["LabeledClaim[]"],
+    "views_and_counterpoints": ["LabeledClaim[] — 含反证"],
+    "scenarios": [
+      {
+        "name": "optimistic",
+        "summary": "string",
+        "trigger_conditions": ["string[] — 必填"],
+        "uncertainty": "string"
+      },
+      {
+        "name": "base",
+        "summary": "string",
+        "trigger_conditions": ["string[]"],
+        "uncertainty": "string"
+      },
+      {
+        "name": "pessimistic",
+        "summary": "string",
+        "trigger_conditions": ["string[]"],
+        "uncertainty": "string"
+      }
+    ],
+    "market_transmission": ["LabeledClaim[] — 非投资建议"],
+    "citations": ["Citation[]"],
+    "data_cutoff": "ISO-8601",
+    "run_id": "string",
+    "disclaimer": "本内容仅供研究参考，不构成投资建议。"
+  },
+  "style_constraints": {
+    "no_persona_clone": true,
+    "no_rhetoric_as_fact": true,
+    "red_team_must_survive_edit": true,
+    "scenarios_require_triggers": true
+  }
+}

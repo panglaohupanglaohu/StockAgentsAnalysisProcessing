@@ -131,9 +131,21 @@ app.add_middleware(
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
+    # The standalone report reader embeds only the explicit, CSP-validated
+    # document render endpoint. Every other route stays non-frameable. This is
+    # intentionally narrower than a global SAMEORIGIN relaxation.
+    _path_segments = request.url.path.strip("/").split("/")
+    is_immersive_report_render = (
+        len(_path_segments) == 7
+        and _path_segments[:3] == ["api", "v1", "information-documents"]
+        and bool(_path_segments[3])
+        and _path_segments[4] == "versions"
+        and _path_segments[5].isdigit()
+        and _path_segments[6] == "render"
+    )
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN" if is_immersive_report_render else "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer" if is_immersive_report_render else "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     if os.getenv("AG_ENABLE_HSTS", "").lower() in {"1", "true", "yes"}:
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
@@ -213,6 +225,13 @@ _AUTH_EXEMPT_PREFIXES = (
     "/api/v1/sustainability",         # 全局 P0: 可持续性评估
     "/api/v1/agent-employee",         # AgentsGroupConfig: 数字员工档案
     "/api/v1/eco-runtime",            # 物竞生境参数/契约/分析/集成（试验田闭环）
+    # StockAgents 新域：数据采集/分析与投资引擎页面（访客可跑 fixture 演示）
+    "/api/v1/trading-runtime",
+    "/api/v1/information-sources",
+    "/api/v1/information-schedules",  # 定时任务 CRUD/run 与 sources 同页，访客可演示
+    "/api/v1/information-documents",
+    "/api/v1/information-runs",  # P9 后台 run / events（访客演示）
+    "/api/v1/investment-simulations",
 )
 # 只读元数据端点 — 前端页面加载时可能先于登录被调用，仅豁免安全方法(GET/HEAD/OPTIONS)。
 # 写操作(POST/PUT/DELETE/PATCH)一律要求认证：曾经的全前缀豁免让未登录请求可以
@@ -230,6 +249,7 @@ _AUTH_EXEMPT_READONLY_PATHS = {
 _AUTH_EXEMPT_READONLY_PREFIXES = (
     "/api/v1/agent-config/teams",     # teams / teams-tree / teams/{id} 只读豁免
     "/api/v1/agent-memory",           # Agent 记忆中枢只读（overview/lifecycle/matrix）；写操作仍要登录
+    "/api/v1/agent-teams/evolution",  # 演进状态/列表只读（写操作仍要登录）
 )
 _SAFE_HTTP_METHODS = {"GET", "HEAD", "OPTIONS"}
 
@@ -420,6 +440,17 @@ async def startup():
         _target_team = os.environ.get("AG_TEAM_ID", "").strip()
 
         _team_manager = TeamManager()
+        # 产品团队白名单：只保留 Build System、AI Coding、60 秒 AI 信息、
+        # 独夫之心世界趋势四支团队。旧 storage/teams.json 中的其他团队
+        # 在启动时受控清理并持久化，避免它们继续出现在 Agent Config 下拉框。
+        from agents.team_policy import ACTIVE_TEAM_IDS, prune_teams
+        _team_manager._teams, _removed_team_ids = prune_teams(_team_manager._teams)
+        if _removed_team_ids:
+            _team_manager._persist()
+            logger.info(
+                "🧹 Removed inactive teams from runtime: %s",
+                ", ".join(_removed_team_ids),
+            )
         # 工厂团队只在磁盘上「尚未存在」时用于首次播种(seed)。
         # 若磁盘已持久化该团队(含萃取/注入的技能、绑定关系等演化状态)，则以磁盘为准，
         # 不能用代码里的空骨架团队覆盖，否则每次重启都会清空技能(数据丢失)。
@@ -438,53 +469,102 @@ async def startup():
             except Exception as e:
                 logger.warning(f"⚠️ AI Coding team not loaded: {e}")
 
-        # Energy team
-        if (not _target_team or _target_team == "energy") \
-                and "energy_first_principle" not in _team_manager._teams:
+        # 60 秒 AI 信息团队（磁盘优先；factory 仅 seed）
+        if (not _target_team or _target_team == "ai_news_60s") \
+                and "ai_news_60s" not in _team_manager._teams:
             try:
-                from agents.teams.energy_team import create_energy_team
-                energy_team_obj = create_energy_team()
-                _team_manager._teams[energy_team_obj.team_id] = energy_team_obj
+                from agents.teams.ai_news_60s_team import create_ai_news_60s_team
+                ai60_obj = create_ai_news_60s_team()
+                _team_manager._teams[ai60_obj.team_id] = ai60_obj
+                logger.info(
+                    f"✅ AI News 60s team registered: {ai60_obj.team_id} "
+                    f"— {len(ai60_obj.agents)} agents"
+                )
             except Exception as e:
-                logger.warning(f"⚠️ Energy team not loaded: {e}")
+                logger.warning(f"⚠️ AI News 60s team not loaded: {e}")
 
-        # 公有云 xOPs 团队 (optional)
-        if (not _target_team or _target_team == "xops") \
-                and "d083a568" not in _team_manager._teams:
+        # 独夫之心世界趋势团队（磁盘优先；factory 仅 seed）
+        if (not _target_team or _target_team == "dufu_world_intel") \
+                and "dufu_world_intel" not in _team_manager._teams:
             try:
-                from agents.teams.xops_team import create_xops_team
-                xops_team_obj = create_xops_team()
-                _team_manager._teams[xops_team_obj.team_id] = xops_team_obj
+                from agents.teams.dufu_world_intel_team import create_dufu_world_intel_team
+                dufu_obj = create_dufu_world_intel_team()
+                _team_manager._teams[dufu_obj.team_id] = dufu_obj
+                logger.info(
+                    f"✅ Dufu World Intel team registered: {dufu_obj.team_id} "
+                    f"— {len(dufu_obj.agents)} agents"
+                )
             except Exception as e:
-                logger.warning(f"⚠️ xOPs team not loaded: {e}")
+                logger.warning(f"⚠️ Dufu World Intel team not loaded: {e}")
 
-        # 云平台运维运营团队 (storage lifecycle + network egress)
-        if not _target_team or _target_team == "cloud_ops":
-            try:
-                from agents.teams.cloud_ops_team import create_cloud_ops_team
-                cloud_ops_obj = create_cloud_ops_team()
-                if cloud_ops_obj.team_id not in _team_manager._teams:
-                    _team_manager._teams[cloud_ops_obj.team_id] = cloud_ops_obj
+        # 幂等能力回填：旧版已持久化的信息团队不能被 factory 覆盖，但必须
+        # 获得新的证据综合、信号评分、业务影响、动态叙事和 20 卡 Overview 能力。
+        try:
+            from agents.skills.information_skills import (
+                bind_ai_capital_overview_deck,
+                bind_immersive_dynamic_report,
+                build_information_skills,
+            )
+
+            _ai60_team = _team_manager._teams.get("ai_news_60s")
+            if _ai60_team is not None:
+                _ai60_skill_catalog = build_information_skills()
+                _ai60_skills_by_agent = {
+                    "ai60_lead": ["intelligence_planning", "confidence_calibration"],
+                    "ai60_scout": ["multilingual_search", "timeline_building"],
+                    "ai60_checker": ["evidence_synthesis", "bias_detection", "confidence_calibration"],
+                    "ai60_market_mapper": ["data_analysis", "signal_scoring", "business_impact_analysis", "change_point_detection"],
+                    "ai60_editor": ["interactive_storytelling"],
+                    "ai60_publisher": ["interactive_storytelling"],
+                }
+                _ai60_tools_by_agent = {
+                    "ai60_lead": ["mixture_of_agents"],
+                    "ai60_editor": ["run_javascript"],
+                    "ai60_publisher": ["run_javascript"],
+                }
+                _backfilled = []
+                for _sid in sorted({sid for values in _ai60_skills_by_agent.values() for sid in values}):
+                    _skill = _ai60_skill_catalog.get(_sid)
+                    if _skill is not None and _sid not in _ai60_team.skills:
+                        _ai60_team.add_skill(_skill)
+                        _backfilled.append(_sid)
+                for _aid, _skills in _ai60_skills_by_agent.items():
+                    _agent = _ai60_team.agents.get(_aid)
+                    if _agent is None:
+                        continue
+                    for _sid in _skills:
+                        if _sid not in _agent.skills:
+                            _agent.skills.append(_sid)
+                    for _tool in _ai60_tools_by_agent.get(_aid, []):
+                        if _tool not in _agent.tools:
+                            _agent.tools.append(_tool)
+                if _backfilled:
+                    logger.info("🧠 AI60 analysis skills backfilled: %s", ", ".join(_backfilled))
+
+            # The shared deck is role-neutral: every existing member of both
+            # information teams receives the same 20-card evidence contract.
+            # This preserves disk-first team configuration while making a
+            # persisted team immediately capable of feeding the new overview.
+            for _info_team_id in ("ai_news_60s", "dufu_world_intel"):
+                _info_team = _team_manager._teams.get(_info_team_id)
+                if _info_team is None:
+                    continue
+                _deck_changed = bind_ai_capital_overview_deck(_info_team)
+                if _deck_changed:
                     logger.info(
-                        f"✅ Cloud Ops team registered: {cloud_ops_obj.team_id} "
-                        f"— {len(cloud_ops_obj.agents)} agents"
+                        "🃏 %s overview-deck skill backfilled: %s",
+                        _info_team_id,
+                        ", ".join(_deck_changed),
                     )
-            except Exception as e:
-                logger.warning(f"⚠️ Cloud Ops team not loaded: {e}")
-
-        # AWS 运维降本增效团队 (Phase 11 G1)
-        if not _target_team or _target_team == "aws_ops":
-            try:
-                from agents.teams.aws_ops_team import create_aws_ops_team, TEAM_ID as _AWS_OPS_TID
-                if _AWS_OPS_TID not in _team_manager._teams:
-                    aws_ops_obj = create_aws_ops_team()
-                    _team_manager._teams[aws_ops_obj.team_id] = aws_ops_obj
+                _reader_changed = bind_immersive_dynamic_report(_info_team)
+                if _reader_changed:
                     logger.info(
-                        f"✅ AWS Ops team registered: {aws_ops_obj.team_id} "
-                        f"— {len(aws_ops_obj.agents)} agents"
+                        "🪐 %s immersive-report skill backfilled: %s",
+                        _info_team_id,
+                        ", ".join(_reader_changed),
                     )
-            except Exception as e:
-                logger.warning(f"⚠️ AWS Ops team not loaded: {e}")
+        except Exception as e:
+            logger.warning(f"⚠️ Information-team skill backfill failed: {e}")
 
         # 宠物智能体团队（猫小虎 + 老鼠）
         # 猫台词提示词技能：小虎即兴发言走 /llm/cat-speak 时以此 instructions 作 system prompt
@@ -510,7 +590,9 @@ async def startup():
                 instructions=_CAT_SPEAK_INSTRUCTIONS,
             )
 
-        if (not _target_team or _target_team == "pet_squad") \
+        # pet_squad is a retired team; keep the legacy implementation module
+        # available for old isolated tests, but never seed it into this app.
+        if ("pet_squad" in ACTIVE_TEAM_IDS) and (not _target_team or _target_team == "pet_squad") \
                 and "pet_squad" not in _team_manager._teams:
             try:
                 from agents.models import AgentProfile, AgentPersonality, AgentTeam, Visibility
@@ -571,6 +653,10 @@ async def startup():
                     logger.info("🐱 backfill: cat_speak_prompt 技能已补入 pet_squad/小虎")
         except Exception as e:
             logger.warning(f"⚠️ cat_speak_prompt 回填失败: {e}")
+
+        # Persist the four-team product surface after pruning and any factory
+        # seeding. This also removes retired team records from disk.
+        _team_manager._persist()
 
         if _target_team:
             logger.info("🎯 Team filter active: only team=%s loaded", _target_team)
@@ -848,6 +934,24 @@ async def startup():
     except Exception as e:
         logger.warning(f"⚠️ Startup Check API failed: {e}")
 
+    # 7b. StockAgents domain APIs (information sources + investment engine)
+    # Independent prefixes — do not alter Plaza / legacy page contracts.
+    try:
+        from domain.api_routes import router as stockagents_domain_router
+        from domain.information_sources.scheduler import get_information_scheduler
+        from domain.information_sources.worker import start_information_worker
+
+        app.include_router(stockagents_domain_router)
+        get_information_scheduler().start()
+        start_information_worker()
+        logger.info(
+            "✅ StockAgents domain API mounted "
+            "(/api/v1/trading-runtime, /information-sources, "
+            "/information-schedules, /information-documents, /information-runs, /investment-simulations)"
+        )
+    except Exception as e:
+        logger.warning(f"⚠️ StockAgents domain API failed: {e}")
+
     _clean_expired_csrf()
 
     # OpenTelemetry (optional)
@@ -872,6 +976,22 @@ async def startup():
         logger.info("🔍 Startup validation scheduled (delayed 2s)")
     except Exception as e:
         logger.warning(f"⚠️ Startup validation scheduling failed: {e}")
+
+
+# Keep the periodic information worker from surviving test clients or a
+# graceful server shutdown.
+@app.on_event("shutdown")
+async def shutdown_information_scheduler():
+    try:
+        from domain.information_sources.scheduler import get_information_scheduler
+        await get_information_scheduler().stop()
+    except Exception as exc:
+        logger.debug("Information scheduler shutdown skipped: %s", exc)
+    try:
+        from domain.information_sources.worker import stop_information_worker
+        await stop_information_worker()
+    except Exception as exc:
+        logger.debug("Information worker shutdown skipped: %s", exc)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1338,6 +1458,34 @@ async def health():
     if not hasattr(health, "_started_at"):
         health._started_at = _time.time()
 
+    # Layered startup health: core_system / information_teams / trading_runtime
+    layers: Dict[str, Any] = {}
+    try:
+        from agents.startup_health import assess_startup_layers
+
+        layers = assess_startup_layers(_team_manager)
+    except Exception as exc:
+        layers = {
+            "overall": "unknown",
+            "error": str(exc),
+            "core_system": {"layer": "core_system", "status": "unknown"},
+            "information_teams": {"layer": "information_teams", "status": "unknown"},
+            "trading_runtime": {"layer": "trading_runtime", "status": "unknown"},
+        }
+
+    trading_ready = (
+        isinstance(layers.get("trading_runtime"), dict)
+        and layers["trading_runtime"].get("status") == "ready"
+    )
+    core_ok = (
+        isinstance(layers.get("core_system"), dict)
+        and layers["core_system"].get("status") == "ok"
+    )
+    info_ok = (
+        isinstance(layers.get("information_teams"), dict)
+        and layers["information_teams"].get("status") == "ok"
+    )
+
     return HealthResponse(
         status="ok",
         version=CONFIG_VERSION,
@@ -1346,11 +1494,18 @@ async def health():
             "bridge_chat": registry.get("bridge_chat") is not None,
             "agent_config": _team_manager is not None,
             "sandbox_runtime_ready": bool(sandbox_runtime.get("ready")),
+            "core_system": core_ok,
+            "information_teams": info_ok,
+            "trading_runtime": trading_ready,
         },
         details={
             "sandbox_runtime": sandbox_runtime,
             "health_checks": check_results,
             "uptime_seconds": round(_time.time() - health._started_at, 1),
+            "layers": layers,
+            "core_system": layers.get("core_system"),
+            "information_teams": layers.get("information_teams"),
+            "trading_runtime": layers.get("trading_runtime"),
         },
     )
 

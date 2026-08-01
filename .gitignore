@@ -28,9 +28,18 @@ coverage/
 !.env.example
 *.pem
 *.key
+config/.dev_admin_password
+config/.api_keys.json
+config/.master_key
+config/users.json
+config/tokens.json
+config/settings.json
+config/model_pool.json
+# keep allowlist as code
+!config/deploy_allowlist.json
 
 # Runtime output
-storage/
+/storage/
 logs/
 *.log
 tmp/
@@ -40,3 +49,7 @@ build/
 # Local reports and generated pages
 artifacts/
 site-output/
+/src/docs/agent_handoffs/
+/src/docs/workflow_artifacts/
+/src/storage/evolution_datasets/
+/src/storage/evolution_runs/

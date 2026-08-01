@@ -1,3 +1,5 @@
+/* CSRF: prefer shared wrapper */
+const _csrfFetch = window._agFetch || fetch;
 /**
  * token-workbench.js — 任务 Token 治理统一工作台（v2）
  * 数据源：GET /api/v1/cost/token-governance/dashboard
@@ -42,7 +44,7 @@
   }
 
   async function jget(url) {
-    var r = await fetch(url, { credentials: 'same-origin' });
+    var r = await (window._agFetch || fetch)(url, { credentials: 'same-origin' });
     if (!r.ok) {
       var errBody = '';
       try { errBody = await r.text(); } catch (e2) { /* ignore */ }
@@ -51,7 +53,7 @@
     return r.json();
   }
   async function jpost(url, body) {
-    var r = await fetch(url, {
+    var r = await (window._agFetch || fetch)(url, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://ga.jspm.io https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*; img-src 'self' data:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgentsGroup2026 — 登录</title>
+  <title>StockAgents — 登录</title>
   <link rel="stylesheet" href="/css/variables.css">
 <style>
     
@@ -337,9 +337,9 @@
 <body>
   <div class="login-container">
     <div class="login-brand">
-      <span class="seal">智</span>
-      <h1>AgentsGroup2026</h1>
-      <p>智能体团队管理平台</p>
+      <span class="seal">投</span>
+      <h1>StockAgents</h1>
+      <p>AI 信息采集与股票投资模拟平台</p>
     </div>
 
     <div class="login-tabs">
@@ -393,7 +393,7 @@
     <button class="btn-guest" onclick="guestLogin()">访客模式进入</button>
 
     <div class="login-footer">
-      AgentsGroup2026 v1.0.0 · Standalone Agent Platform
+      StockAgents v1.0.0 · Agentic Market Intelligence Platform
     </div>
   </div>
 
@@ -433,11 +433,17 @@
         }
       }
 
+      var DEFAULT_AFTER_LOGIN = '/agent-team-config.html';
+
+      function isSafeLocalPath(path) {
+        return !!(path && path.charAt(0) === '/' && path.indexOf('//') !== 0);
+      }
+
       function getNextUrl() {
         var params = new URLSearchParams(window.location.search);
-        var next = params.get('next') || '/agent-team-config.html';
-        if (!next || next.charAt(0) !== '/' || next.indexOf('//') === 0) {
-          return '/agent-team-config.html';
+        var next = params.get('next') || DEFAULT_AFTER_LOGIN;
+        if (!isSafeLocalPath(next)) {
+          return DEFAULT_AFTER_LOGIN;
         }
         return next;
       }

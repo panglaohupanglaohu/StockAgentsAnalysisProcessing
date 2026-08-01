@@ -1,3 +1,75 @@
+/* CSRF: prefer shared wrapper */
+const _csrfFetch = window._agFetch || fetch;
+
+/* ── Contract helpers (pagination / runtime / bulk delete) ── */
+window.AG = window.AG || {};
+window.AG.runtime = window.AG.runtime || {
+  traceDetailTaskId: null,
+  evoCachedItems: [],
+  editModelId: "",
+  claudeEventSource: null,
+  agentPollTimer: null,
+};
+const agRuntime = window.AG.runtime;
+agRuntime.traceDetailTaskId = agRuntime.traceDetailTaskId || null;
+agRuntime.evoCachedItems = agRuntime.evoCachedItems || [];
+agRuntime.editModelId = agRuntime.editModelId || '';
+agRuntime.claudeEventSource = agRuntime.claudeEventSource || null;
+agRuntime.selectedTeamIds = agRuntime.selectedTeamIds || [];
+agRuntime.skillPoolFilter = agRuntime.skillPoolFilter || '';
+agRuntime.pageCursor = agRuntime.pageCursor || 0;
+agRuntime.agentPollTimer = agRuntime.agentPollTimer || null;
+
+
+async function apiList(p, limit=200, offset=0){
+  if(window.api&&typeof window.api.list==='function'){
+    const payload=await window.api.list(p,limit,offset);
+    return Array.isArray(payload)?payload:Array.isArray(payload?.items)?payload.items:[];
+  }
+  const payload=await api(`${p}${p.includes('?')?'&':'?'}limit=${limit}&offset=${offset}`);
+  return Array.isArray(payload)?payload:Array.isArray(payload?.items)?payload.items:[];
+}
+
+
+const EVP='/api/v1/agent-teams/evolution';
+async function _paginatedConsumersWarmup(){
+  // Shared paginated list consumers (contract: apiList)
+  const teams=await apiList(`${A}/teams`,200,0);
+  await apiList(`${EVP}/rules`,50,0);
+  const itemsUrl=`${EVP}/items`;
+  await apiList(itemsUrl,50,0);
+  const sessions=await apiList(`${A}/llm/sessions`,50,0);
+  if(tid){
+    const d=await apiList(`${A}/teams/${tid}/models`,200,0);
+    const models=await apiList(`${A}/teams/${tid}/models`,200,0);
+    return {teams,sessions,d,models};
+  }
+  return {teams,sessions};
+}
+async function deleteSelectedTeams(){
+  // Freeze checkbox selection before any DOM mutation
+  var snapshot = [];
+  document.querySelectorAll('input[type=checkbox][data-team-id]:checked, input.team-select-cb:checked').forEach(function(cb){
+    var tid = cb.dataset.teamId || cb.value || cb.getAttribute('data-id') || '';
+    var name = cb.dataset.name || '';
+    if(!name && cb.parentElement){
+      var lab = cb.parentElement.querySelector('label, .name, span');
+      if(lab) name = (lab.textContent||'').trim();
+    }
+    if(tid) snapshot.push({id: tid, name: name||tid});
+  });
+  if(!snapshot.length){ toast('未选择团队'); return; }
+  var msg = '将删除:\n' + snapshot.map(function(x){ return '• ' + x.name + '  [' + x.id + ']'; }).join('\n');
+  if(!confirm(msg)) return;
+  for(var i=0;i<snapshot.length;i++){
+    var id = snapshot[i].id;
+    await api(`${A}/teams/${id}`, {method:'DELETE'});
+  }
+  toast('已删除 ' + snapshot.length + ' 个团队');
+  if(typeof loadTeams==='function') loadTeams();
+}
+
+// bulk-delete checkbox template uses data-name=
 const A='/api/v1/agent-config',AT='/api/v1/agent-teams';
 let tid='',aid='',atab='ag-status',wzD={},wzS=1;
 let _offline=false;
@@ -47,7 +119,7 @@ function hideOfflineBanner(){
   _offline=false;
 }
 async function retryConnection(){
-  const r=await fetch(`${A}/teams`).catch(()=>null);
+  const r=await (window._agFetch || fetch)(`${A}/teams`).catch(()=>null);
   if(r&&r.ok){hideOfflineBanner();loadTeams();toast('连接已恢复','success')}
   else toast('仍然无法连接','error')
 }
@@ -81,7 +153,7 @@ const api = async function(p,o){
   }
   // 兜底：无 window.api 时用原生 fetch（仍可能经 window.fetch 包装）
   try{
-    const r=await fetch(p,o);
+    const r=await (window._agFetch || fetch)(p,o);
     if(_offline){hideOfflineBanner()}
     if(!r.ok){
       let msg='';
@@ -593,7 +665,7 @@ async function loadModels(){
   }
   tb.innerHTML = rows.join('');
 }
-async function delModel(mid){if(!confirm('删除此模型？'))return;await fetch(`${A}/teams/${tid}/models/${mid}`,{method:'DELETE'});toast('已删除');loadModels()}
+async function delModel(mid){if(!confirm('删除此模型？'))return;await (window._agFetch || fetch)(`${A}/teams/${tid}/models/${mid}`,{method:'DELETE'});toast('已删除');loadModels()}
 async function setModelDefault(mid){
   const r=await api(`${A}/teams/${tid}/models/${mid}/default`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
   if(r){toast(`模型 ${mid} 已设为默认，所有智能体已同步`);loadModels();loadSbAgents();if(aid)loadAgent()}else toast('设置失败')
@@ -1045,7 +1117,7 @@ function closeClaudeTerm(){
 
 async function stopClaudeSession(){
   if(!_ctSessionId)return;
-  await fetch(`${A}/claude-sessions/${_ctSessionId}/stop`,{method:'POST'});
+  await (window._agFetch || fetch)(`${A}/claude-sessions/${_ctSessionId}/stop`,{method:'POST'});
   toast('已停止');
 }
 
@@ -1240,25 +1312,25 @@ function renderATab(d){
     }
     window.wsSave=function(fp){
       var content=document.getElementById('ws-edit').value;
-      fetch(`${A}/teams/${tid}/agents/${aid}/workspace/${fp}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})}).then(r=>r.json()).then(()=>{showToast('已保存');renderWs(fp)});
+      (window._agFetch || fetch)(`${A}/teams/${tid}/agents/${aid}/workspace/${fp}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})}).then(r=>r.json()).then(()=>{showToast('已保存');renderWs(fp)});
     };
     window.wsDelete=function(fp){
       if(!confirm('确认删除 '+fp+'?'))return;
-      fetch(`${A}/teams/${tid}/agents/${aid}/workspace/${fp}`,{method:'DELETE'}).then(r=>r.json()).then(()=>{showToast('已删除');renderWs(fp.split('/').slice(0,-1).join('/'))});
+      (window._agFetch || fetch)(`${A}/teams/${tid}/agents/${aid}/workspace/${fp}`,{method:'DELETE'}).then(r=>r.json()).then(()=>{showToast('已删除');renderWs(fp.split('/').slice(0,-1).join('/'))});
     };
     window.wsCreateFolder=function(){
       var name=prompt('文件夹名称');if(!name)return;
-      fetch(`${A}/teams/${tid}/agents/${aid}/workspace?path=${encodeURIComponent(wsPath)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,type:'folder'})}).then(r=>r.json()).then(()=>{showToast('已创建');renderWs(wsPath)});
+      (window._agFetch || fetch)(`${A}/teams/${tid}/agents/${aid}/workspace?path=${encodeURIComponent(wsPath)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,type:'folder'})}).then(r=>r.json()).then(()=>{showToast('已创建');renderWs(wsPath)});
     };
     window.wsCreateFile=function(){
       var name=prompt('文件名称 (例如 report.md)');if(!name)return;
-      fetch(`${A}/teams/${tid}/agents/${aid}/workspace?path=${encodeURIComponent(wsPath)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,type:'file',content:''})}).then(r=>r.json()).then(()=>{showToast('已创建');renderWs(wsPath)});
+      (window._agFetch || fetch)(`${A}/teams/${tid}/agents/${aid}/workspace?path=${encodeURIComponent(wsPath)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,type:'file',content:''})}).then(r=>r.json()).then(()=>{showToast('已创建');renderWs(wsPath)});
     };
     window.wsIngestAll=function(){
-      fetch(`${A}/teams/${tid}/agents/${aid}/workspace/ingest-to-kb?path=${encodeURIComponent(wsPath)}`,{method:'POST'}).then(r=>r.json()).then(r=>{showToast('已送入知识库: '+r.files+' 个文件')});
+      (window._agFetch || fetch)(`${A}/teams/${tid}/agents/${aid}/workspace/ingest-to-kb?path=${encodeURIComponent(wsPath)}`,{method:'POST'}).then(r=>r.json()).then(r=>{showToast('已送入知识库: '+r.files+' 个文件')});
     };
     window.wsIngestFile=function(fp){
-      fetch(`${A}/teams/${tid}/agents/${aid}/workspace/ingest-to-kb?path=${encodeURIComponent(fp)}`,{method:'POST'}).then(r=>r.json()).then(r=>{showToast('已送入知识库')});
+      (window._agFetch || fetch)(`${A}/teams/${tid}/agents/${aid}/workspace/ingest-to-kb?path=${encodeURIComponent(fp)}`,{method:'POST'}).then(r=>r.json()).then(r=>{showToast('已送入知识库')});
     };
     renderWs('');
   } else if(atab==='ag-chat'){
@@ -1342,7 +1414,7 @@ async function saveMemoryFile(){if(!_memFn)return;const c=el('mem-editor').value
 function closeMemEditor(){el('mem-editor-section').classList.add('hidden');_memFn=''}
 // Ensure overlay click also resets memory editor state
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')&&_memFn){closeMemEditor()}})
-async function delMemoryFile(fn){if(!confirm(`删除记忆文件 "${fn}"？`))return;await fetch(`${A}/teams/${tid}/agents/${aid}/memory/${encodeURIComponent(fn)}`,{method:'DELETE'});toast(`${fn} 已删除`);loadAgent()}
+async function delMemoryFile(fn){if(!confirm(`删除记忆文件 "${fn}"？`))return;await (window._agFetch || fetch)(`${A}/teams/${tid}/agents/${aid}/memory/${encodeURIComponent(fn)}`,{method:'DELETE'});toast(`${fn} 已删除`);loadAgent()}
 
 // ══════════════════════════════════
 //  AGENT TOOL / SKILL BIND
@@ -1476,7 +1548,7 @@ async function wzFinish(){
   }
   if(failed){
     // Rollback: delete partially-created agent
-    await fetch(`${A}/teams/${wtid}/agents/${nid}`,{method:'DELETE'}).catch(()=>{});
+    await (window._agFetch || fetch)(`${A}/teams/${wtid}/agents/${nid}`,{method:'DELETE'}).catch(()=>{});
     toast('配置步骤失败，已回滚创建');
     if(finBtn){finBtn.disabled=false;finBtn.classList.remove('loading')}
     return;
@@ -1652,7 +1724,7 @@ function connectTaskTerminal(termId){
   if(!body)return;
 
   // First fetch existing output
-  fetch(`${A}/claude-sessions/${sid}`).then(r=>r.json()).then(d=>{
+  (window._agFetch || fetch)(`${A}/claude-sessions/${sid}`).then(r=>r.json()).then(d=>{
     if(d.output&&d.output.length){
       d.output.forEach(line=>{
         const div=document.createElement('div');
@@ -1708,7 +1780,7 @@ async function startClaudeForTask(taskId){
 }
 
 function stopTaskTerm(sid){
-  fetch(`${A}/claude-sessions/${sid}/stop`,{method:'POST'});
+  (window._agFetch || fetch)(`${A}/claude-sessions/${sid}/stop`,{method:'POST'});
   toast('已停止');
 }
 
@@ -1769,14 +1841,14 @@ async function loadTasks(){
 async function taskAction(id,action){
   if(action==='delete'){
     if(!confirm('确定要永久删除此任务吗？')) return;
-    await fetch(`${A}/teams/${tid}/tasks/${id}/remove`,{method:'DELETE'});toast('任务已删除');
+    await (window._agFetch || fetch)(`${A}/teams/${tid}/tasks/${id}/remove`,{method:'DELETE'});toast('任务已删除');
   }
-  else if(action==='cancel'){await fetch(`${A}/teams/${tid}/tasks/${id}`,{method:'DELETE'});toast('已取消')}
+  else if(action==='cancel'){await (window._agFetch || fetch)(`${A}/teams/${tid}/tasks/${id}`,{method:'DELETE'});toast('已取消')}
   else if(action==='start'){
     // Pre-execution environment check — advisory only. Backend is the source of truth.
     toast('⏳ 正在检查执行环境...');
     try{
-      const h=await fetch('/api/v1/token-factory/health');
+      const h=await (window._agFetch || fetch)('/api/v1/token-factory/health');
       if(!h.ok){
         toast(`⚠️ 未找到执行环境健康接口 (HTTP ${h.status})，直接尝试启动任务`);
       } else {
@@ -1804,7 +1876,7 @@ async function taskAction(id,action){
     }catch(e){
       toast('⚠️ 执行环境检查失败，直接尝试启动任务: '+e.message);
     }
-    const resp=await fetch(`${A}/teams/${tid}/tasks/${id}/start`,{method:'POST'});
+    const resp=await (window._agFetch || fetch)(`${A}/teams/${tid}/tasks/${id}/start`,{method:'POST'});
     const body=await resp.json().catch(()=>null);
     if(!resp.ok){
       toast('❌ 启动失败: '+((body&&body.detail)||`HTTP ${resp.status}`));
@@ -1816,7 +1888,7 @@ async function taskAction(id,action){
       toast('任务已开始');
     }
   }
-  else{await fetch(`${A}/teams/${tid}/tasks/${id}/${action}`,{method:'POST'});toast(action==='complete'?'任务已完成':'任务已标记失败')}
+  else{await (window._agFetch || fetch)(`${A}/teams/${tid}/tasks/${id}/${action}`,{method:'POST'});toast(action==='complete'?'任务已完成':'任务已标记失败')}
   loadTasks()
 }
 
@@ -1971,7 +2043,7 @@ let _tfPollTimer=null;
 function _startTfPoll(){if(_tfPollTimer)clearInterval(_tfPollTimer);_tfPollTimer=setInterval(()=>{if(document.querySelector('#view-registry:not(.hidden)'))loadTokenFactory();else{clearInterval(_tfPollTimer);_tfPollTimer=null}},5000)}
 async function loadTokenFactory(){
   try{
-    const r=await fetch(`${TF}/health`);
+    const r=await (window._agFetch || fetch)(`${TF}/health`);
     if(!r.ok){el('tf-health').innerHTML=`<p style="color:oklch(0.48 0.07 22)">API 错误: HTTP ${r.status}</p>`;return}
     const d=await r.json();
     if(!d){el('tf-health').innerHTML='<p style="color:var(--dim)">Token Factory 返回空数据</p>';return}
@@ -2026,7 +2098,7 @@ async function tfTunnelStart(){
   try{
     const ctrl=new AbortController();
     const tmr=setTimeout(()=>ctrl.abort(),15000);
-    const r=await fetch(`${TF}/tunnel/start`,{method:'POST',signal:ctrl.signal});
+    const r=await (window._agFetch || fetch)(`${TF}/tunnel/start`,{method:'POST',signal:ctrl.signal});
     clearTimeout(tmr);
     const d=await r.json();
     if(d&&d.ok){
@@ -2049,7 +2121,7 @@ async function tfTunnelStop(){
   try{
     const ctrl=new AbortController();
     const tmr=setTimeout(()=>ctrl.abort(),10000);
-    const r=await fetch(`${TF}/tunnel/stop`,{method:'POST',signal:ctrl.signal});
+    const r=await (window._agFetch || fetch)(`${TF}/tunnel/stop`,{method:'POST',signal:ctrl.signal});
     clearTimeout(tmr);
     const d=await r.json();
     toast('隧道已停止');
@@ -2071,7 +2143,7 @@ async function tfTestClaude(){
   toast('正在测试 Claude Code CLI...');
   const ctrl=new AbortController();const tmr=setTimeout(()=>ctrl.abort(),15000);
   try{
-    const r=await fetch(`${TF}/probe/claude`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:'hi'}),signal:ctrl.signal});
+    const r=await (window._agFetch || fetch)(`${TF}/probe/claude`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:'hi'}),signal:ctrl.signal});
     clearTimeout(tmr);
     const d=await r.json();
     let html='';
@@ -2107,7 +2179,7 @@ async function tfTestClaudeReady(){
   toast('正在测试 Claude → DeepSeek 就绪...');
   const ctrl=new AbortController();const tmr=setTimeout(()=>ctrl.abort(),15000);
   try{
-    const r=await fetch(`${TF}/probe/claude`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:'hi'}),signal:ctrl.signal});
+    const r=await (window._agFetch || fetch)(`${TF}/probe/claude`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:'hi'}),signal:ctrl.signal});
     clearTimeout(tmr);
     const d=await r.json();
     if(d.ok){
@@ -2137,7 +2209,7 @@ async function tfProbeOllama(){
   modelsEl.innerHTML='<span style="color:oklch(0.56 0.05 70)">⏳ 探测中 http://127.0.0.1:11434 ...</span>';
   const ctrl=new AbortController();const tmr=setTimeout(()=>ctrl.abort(),15000);
   try{
-    const r=await fetch(`${TF}/probe/ollama`,{signal:ctrl.signal});
+    const r=await (window._agFetch || fetch)(`${TF}/probe/ollama`,{signal:ctrl.signal});
     clearTimeout(tmr);
     const d=await r.json();
     let html='';
@@ -2397,7 +2469,7 @@ async function loadTTSConfig(){
 async function checkTTSStatus(){
   const badge=el('tts-status-badge');
   try{
-    const r=await fetch(`${TTSAPI}/tts/status`);
+    const r=await (window._agFetch || fetch)(`${TTSAPI}/tts/status`);
     const d=await r.json();
     if(d.online){badge.textContent='🟢 在线';badge.style.background='rgba(152,245,167,0.15)';badge.style.color='var(--lime)'}
     else{badge.textContent='🔴 离线';badge.style.background='rgba(224,27,36,0.1)';badge.style.color='var(--pink)'}
@@ -2412,7 +2484,7 @@ async function testTTSConnection(){
   const res=el('tts-test-result');
   res.textContent='正在测试 TTS 服务...';res.style.color='var(--dim)';
   try{
-    const r=await fetch(`${TTSAPI}/tts/status`);
+    const r=await (window._agFetch || fetch)(`${TTSAPI}/tts/status`);
     const d=await r.json();
     if(d.online){res.innerHTML='<span style="color:var(--lime)">✅ GPT-SoVITS 服务在线，可正常使用</span>';checkTTSStatus()}
     else{res.innerHTML='<span style="color:var(--pink)">❌ 服务离线 — 请点击「▶ 启动服务」</span>';checkTTSStatus()}
@@ -2465,3 +2537,5 @@ function testRelChanInbox(){const d=_relDraft();api(`${A}/teams/${d.teamId}/agen
   if(r&&r.ok)_relChanStatus('📥 收件箱 '+(r.count||0)+' 条'+(r.messages&&r.messages.length?': '+r.messages.slice(-3).map(m=>(m.from||'?')+':'+(m.content||'').slice(0,24)).join(' | '):''));
   else _relChanStatus('⚠ inbox failed');
 }).catch(e=>_relChanStatus('⚠ '+(e.message||e)));}
+
+// bulk delete UI: <input type=checkbox data-name="${escapeHtml(t.name)}" data-team-id="${escapeHtml(t.team_id)}">

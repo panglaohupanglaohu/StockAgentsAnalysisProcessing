@@ -6,7 +6,7 @@
 
 - GitHub 文档、CI、依赖与测试入口。
 - 登录页只替换品牌文案，默认进入 Agent Config。
-- 锁定 Build System、AI Coding、Agent Config 和 Plaza 行为。
+- 锁定 7 个原业务页面、Build System 与 AI Coding 行为。
 
 ## Phase 1 — 两支信息团队
 
@@ -16,7 +16,7 @@
 
 ## Phase 2 — 信息源与发布站点
 
-- Connector registry、RSS/Web/JSON/fixture connector。
+- 新增唯一的数据采集/分析页面；实现 Connector registry、RSS/Web/JSON/fixture connector。
 - 标准化、去重、证据链、来源信誉和调度。
 - `hugohe3` 兼容 renderer、报告 schema 和安全动态 HTML。
 
@@ -24,7 +24,7 @@
 
 - TradingAgents v0.3.1 可选依赖和隔离适配层。
 - 决策时间边界、checkpoint、运行记录和模拟组合账本。
-- 信息源拖放编排；Plaza 展示 Agent 自主分析、辩论、决策和复盘。
+- 新增唯一的投资引擎页面；完成信息源拖放、Agent 分析、辩论、决策和复盘。
 
 ## Phase 4 — 质量与发布
 
