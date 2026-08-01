@@ -313,15 +313,102 @@ def _deck_card(
     *,
     state: str = "observed",
     featured: bool = False,
+    conclusion: Optional[Dict[str, str]] = None,
 ) -> str:
     state_class, state_label = _deck_state(state)
     featured_class = " research-card-featured" if featured else ""
+    conclusion_html = ""
+    if conclusion:
+        conclusion_html = (
+            "<section class='card-conclusion' aria-label='本卡结论摘要'>"
+            + "".join(
+                f"<div><span>{_esc(label)}</span><b>{_esc(str(conclusion.get(key) or '待核验'))}</b></div>"
+                for key, label in (("time", "时间"), ("place", "地点"), ("object", "对象"),
+                                    ("event", "事件"), ("result", "结果"), ("impact", "影响"),
+                                    ("action", "行动"))
+            )
+            + "</section>"
+        )
     return (
         f"<article id='{_esc(card_id)}' class='research-card{featured_class}' data-card-id='{_esc(card_id)}' data-card-number='{number:02d}'>"
         f"<header class='research-card-head'><span>{number:02d} · {_esc(chapter)}</span>"
         f"<em class='deck-state {state_class}'>{_esc(state_label)}</em></header>"
-        f"<h3>{_esc(title)}</h3>{content}</article>"
+        f"{conclusion_html}<h3>{_esc(title)}</h3>{content}</article>"
     )
+
+
+def _card_conclusion(
+    report: Union[AiNews60sReport, WorldIntelReport],
+    analysis: Dict[str, Any],
+    *,
+    card_id: str,
+    title: str,
+    state: str,
+    team_name: str,
+) -> Dict[str, str]:
+    """Build a factual, compact conclusion tuple for every deck card.
+
+    The tuple deliberately leads with *what happened and what to do next*;
+    implementation/method details stay in the card body or its folded note.
+    Missing fields are explicitly marked rather than invented.
+    """
+    sources = list(analysis.get("source_breakdown") or [])
+    topics = list(analysis.get("topic_clusters") or [])
+    signals = list(analysis.get("top_signals") or [])
+    evidence = int(analysis.get("source_count") or 0)
+    score = _as_number(analysis.get("evidence_score"))
+    date = str(getattr(report, "data_cutoff", "") or "待核验")
+    place = ", ".join(str(row.get("host")) for row in sources[:2] if row.get("host")) or "多来源域名"
+    obj = str((topics[0].get("name") if topics else None) or (getattr(report, "related_companies", []) or [None])[0] or team_name)
+    focal = str(signals[0].get("title") or "本轮信号") if signals else "本轮证据集合"
+    why = getattr(report, "why_it_matters", []) or getattr(report, "market_transmission", []) or []
+    impact_text = str(why[0]) if why else "影响待结合更多来源核验"
+    actions = {
+        "cover": "先读核心结论，再查看证据卡",
+        "editor-note": "按重点结论继续核验",
+        "contents": "选择卡片查看对应证据",
+        "signal-landscape": "关注证据强度与覆盖边界",
+        "evidence-pulse": "补充低覆盖来源",
+        "two-state-gap": "同时追踪信号与反证",
+        "confidence-bubble": "勿把覆盖度当成规模",
+        "evidence-donut": "检查来源是否过度集中",
+        "top-three": "优先核验前三主题",
+        "source-ranking": "优先复核高质量来源",
+        "dual-track": "补充地域与一手来源",
+        "second-tier": "避免被头部来源主导",
+        "focal-signal": "等待第二来源确认焦点信号",
+        "flow-map": "核验主题到产业节点的链路",
+        "pareto": "降低单一来源依赖",
+        "evidence-hub": "把共现关系与因果分开",
+        "uncertainty": "保留问题，不提前下结论",
+        "adoption-cost-proxy": "积累跨期数据后再比较",
+        "risk-quadrant": "先处理高影响高概率风险",
+        "closing": "按缺口清单进入下一轮采集",
+    }
+    result = {
+        "cover": focal,
+        "editor-note": str(getattr(report, "headline", "") or focal),
+        "contents": f"{evidence} 条证据已归档",
+        "signal-landscape": f"综合证据分 {score:.2f}",
+        "evidence-pulse": f"{evidence} 条证据来自 {len(sources)} 个来源域",
+        "two-state-gap": f"{len(signals)} 条信号，{len(analysis.get('open_questions') or [])} 个待验证问题",
+        "confidence-bubble": f"{len(topics)} 个主题簇",
+        "evidence-donut": "来源结构已按域名拆分",
+        "top-three": "、".join(str(row.get("name")) for row in topics[:3]) or "主题待定",
+        "source-ranking": "按数量与质量线索排序",
+        "dual-track": "地域仅作来源代理",
+        "second-tier": "长尾来源需要补证",
+        "focal-signal": focal,
+        "flow-map": "主题到产业节点为研究性映射",
+        "pareto": "头部来源集中度已计算",
+        "evidence-hub": "主题共现关系已绘制",
+        "uncertainty": "仍存在未关闭的不确定性",
+        "adoption-cost-proxy": "跨期代理数据待积累" if not analysis.get("time_series") else "已形成跨期代理",
+        "risk-quadrant": "风险按影响与概率分布",
+        "closing": "结论可追溯，下一轮继续补证",
+    }.get(card_id, title)
+    return {"time": date, "place": place, "object": obj, "event": focal, "result": result,
+            "impact": impact_text, "action": actions.get(card_id, "继续核验")}
 
 
 def _deck_bar_list(rows: List[Dict[str, Any]], *, label_key: str, value_key: str, suffix: str = "") -> str:
@@ -528,7 +615,15 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
     long_tail = sources[3:] or sources[1:]
     cards: List[str] = []
 
-    cards.append(_deck_card(1, "cover", "COVER", "本轮信号档案", "<div class='deck-cover-copy'><p>" + _esc(title) + "</p><small>" + _esc(subtitle) + "</small><div class='deck-cover-rule'></div><span>研究 / 模拟用途 · 非投资建议 · 无真实券商连接</span></div>", featured=True))
+    def card(number: int, card_id: str, chapter: str, card_title: str, content: str, **kwargs: Any) -> str:
+        state = str(kwargs.get("state", "observed"))
+        return _deck_card(
+            number, card_id, chapter, card_title, content,
+            state=state, featured=bool(kwargs.get("featured", False)),
+            conclusion=_card_conclusion(report, analysis, card_id=card_id, title=card_title, state=state, team_name=team_name),
+        )
+
+    cards.append(card(1, "cover", "COVER", "本轮信号档案", "<div class='deck-cover-copy'><p>" + _esc(title) + "</p><small>" + _esc(subtitle) + "</small><div class='deck-cover-rule'></div><span>研究 / 模拟用途 · 非投资建议 · 无真实券商连接</span></div>", featured=True))
     # The first cards are conclusions, not documentation about the method.  The
     # reader should see what this run found immediately after the cover.
     conf_label = "强" if score >= 0.72 else "中" if score >= 0.45 else "弱"
@@ -558,7 +653,7 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
             "<p>事件卡、时间线与情景树均绑定本轮证据；情景为分析框架非预测保证。</p></details>"
         )
         impact = _claim_block(report.market_transmission[:3], "市场传导") + _claim_block(report.views_and_counterpoints[:3], "反证与限制")
-    cards.append(_deck_card(2, "editor-note", "EXECUTIVE FINDING", "编辑结论 · 本轮核心判断", conclusion, state="observed" if evidence_count else "gap", featured=True))
+    cards.append(card(2, "editor-note", "EXECUTIVE FINDING", "编辑结论 · 本轮核心判断", conclusion, state="observed" if evidence_count else "gap", featured=True))
     # CONTENTS: real status + one-line abstract + jump anchors for remaining deck cards
     toc_specs = [
         ("cover", "observed" if title else "gap", "封面结论"),
@@ -578,33 +673,33 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
         f"<span>{_esc(label)} · 点击直达</span></a></li>"
         for cid, st, label in toc_specs
     ) + "</ul></nav>" + impact
-    cards.append(_deck_card(3, "contents", "CONTENTS", "目录 · 真实摘要与状态", toc_html, state="observed" if evidence_count else "gap"))
+    cards.append(card(3, "contents", "CONTENTS", "目录 · 真实摘要与状态", toc_html, state="observed" if evidence_count else "gap"))
     kpis = "<div class='deck-kpis'><div><span>证据</span><b>" + str(evidence_count) + "</b><small>已标准化条目</small></div><div><span>来源</span><b>" + str(diversity) + "</b><small>独立域名</small></div><div><span>综合</span><b>" + f"{score:.2f}" + "</b><small>覆盖/时效评分</small></div><div><span>时效</span><b>" + f"{freshness:.0%}" + "</b><small>7 日内证据</small></div></div>"
-    cards.append(_deck_card(4, "signal-landscape", "LANDSCAPE", "证据版图：本轮四个控制面", kpis))
-    cards.append(_deck_card(5, "evidence-pulse", "EVIDENCE PULSE", "来源热度与信号脉冲", _deck_bar_list(sources, label_key="host", value_key="count", suffix=" 条")))
+    cards.append(card(4, "signal-landscape", "LANDSCAPE", "证据版图：本轮四个控制面", kpis))
+    cards.append(card(5, "evidence-pulse", "EVIDENCE PULSE", "来源热度与信号脉冲", _deck_bar_list(sources, label_key="host", value_key="count", suffix=" 条")))
     dumbbell = "<div class='deck-dumbbell'><div><span>已观察信号</span><b>" + str(high_confidence) + "</b></div><i></i><div><span>待验证问题</span><b>" + str(len(analysis.get("open_questions") or [])) + "</b></div><p>左侧是高分证据条目，右侧是未被证据关闭的研究问题。</p></div>"
-    cards.append(_deck_card(6, "two-state-gap", "COMPARISON", "信号与反证的双端张力", dumbbell, state="inferred"))
+    cards.append(card(6, "two-state-gap", "COMPARISON", "信号与反证的双端张力", dumbbell, state="inferred"))
     if topics:
         bubbles = "".join("<span class='deck-bubble b" + str(index % 5) + "' style='--size:" + str(44 + int(_as_number(row.get("count")) / topic_max * 68)) + "px'><b>" + _esc(str(row.get("name") or "主题")) + "</b><small>" + str(int(row.get("count") or 0)) + " 条</small></span>" for index, row in enumerate(topics[:5]))
         bubble_content = "<div class='deck-bubbles'>" + bubbles + "</div><p class='deck-caption'>气泡面积按证据条数缩放；它表示议题覆盖，不表示市场规模。</p>"
     else:
         bubble_content = _deck_gap(gaps, "等待主题聚类结果。")
-    cards.append(_deck_card(7, "confidence-bubble", "CONFIDENCE", "主题密度气泡：看见覆盖，不夸大规模", bubble_content, state="observed" if topics else "gap"))
-    cards.append(_deck_card(8, "evidence-donut", "SOURCE MIX", "来源结构：证据来自哪里", _deck_donut(sources)))
+    cards.append(card(7, "confidence-bubble", "CONFIDENCE", "主题密度气泡：看见覆盖，不夸大规模", bubble_content, state="observed" if topics else "gap"))
+    cards.append(card(8, "evidence-donut", "SOURCE MIX", "来源结构：证据来自哪里", _deck_donut(sources)))
     if top_three:
         comparisons = "<div class='deck-three'>" + "".join("<article><span>#" + str(index + 1) + "</span><h4>" + _esc(str(row.get("name") or "主题")) + "</h4><strong>" + f"{_as_number(row.get('share')):.0%}" + "</strong><p>" + str(int(row.get("count") or 0)) + " 条证据</p><small>" + _esc("；".join((row.get("examples") or [])[:1])) + "</small></article>" for index, row in enumerate(top_three)) + "</div>"
     else:
         comparisons = _deck_gap(gaps, "等待可比较的主题簇。")
-    cards.append(_deck_card(9, "top-three", "TOP THREE", "前三主题：证据份额与代表性样本", comparisons, state="observed" if top_three else "gap"))
-    cards.append(_deck_card(10, "source-ranking", "RANKING", "来源排名：数量与质量线索", _deck_bar_list(sources, label_key="host", value_key="avg_score", suffix=" 分")))
+    cards.append(card(9, "top-three", "TOP THREE", "前三主题：证据份额与代表性样本", comparisons, state="observed" if top_three else "gap"))
+    cards.append(card(10, "source-ranking", "RANKING", "来源排名：数量与质量线索", _deck_bar_list(sources, label_key="host", value_key="avg_score", suffix=" 分")))
     dual_track = "<div class='deck-dual-track'><article><span>域名 .cn</span><b>" + str(domestic) + "</b><small>条引用（域名后缀代理）</small></article><article><span>其他域名</span><b>" + str(outside) + "</b><small>条引用（不代表市场归属）</small></article><p>本卡只比较来源域名分布，不能据此判断公司、资本或市场地域。</p></div>"
-    cards.append(_deck_card(11, "dual-track", "DUAL TRACK", "双轨视角：来源地域代理", dual_track, state="inferred"))
+    cards.append(card(11, "dual-track", "DUAL TRACK", "双轨视角：来源地域代理", dual_track, state="inferred"))
     tail_content = _deck_bar_list(long_tail, label_key="host", value_key="count", suffix=" 条") if long_tail else _deck_gap(gaps, "来源长尾尚未形成；建议增加独立 RSS 或官方一手来源。")
-    cards.append(_deck_card(12, "second-tier", "LONG TAIL", "第二梯队：避免被头部来源主导", tail_content, state="observed" if long_tail else "gap"))
+    cards.append(card(12, "second-tier", "LONG TAIL", "第二梯队：避免被头部来源主导", tail_content, state="observed" if long_tail else "gap"))
     focal = signals[0] if signals else {}
     focal_content = "<div class='deck-focal'><span>本轮最强线索</span><h4>" + _esc(str(focal.get("title") or title)) + "</h4><div><b>" + f"{_as_number(focal.get('score')):.0f}" + "</b><small>信号分（新颖性 / 时效 / 来源质量）</small></div><p>" + _esc("、".join(focal.get("topics") or [])) + "</p></div>"
-    cards.append(_deck_card(13, "focal-signal", "FOCAL SIGNAL", "本轮信号中心", focal_content, state="observed" if focal else "pending", featured=True))
-    cards.append(_deck_card(14, "flow-map", "FLOW MAP", "主题 → 产业节点：待核验的传导路径", _deck_relationship_flow(edges), state="inferred" if edges else "gap"))
+    cards.append(card(13, "focal-signal", "FOCAL SIGNAL", "本轮信号中心", focal_content, state="observed" if focal else "pending", featured=True))
+    cards.append(card(14, "flow-map", "FLOW MAP", "主题 → 产业节点：待核验的传导路径", _deck_relationship_flow(edges), state="inferred" if edges else "gap"))
     pareto_rows = []
     running = 0
     total_sources = sum(int(row.get("count") or 0) for row in sources) or 1
@@ -612,18 +707,18 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
         running += int(row.get("count") or 0)
         pareto_rows.append({"host": row.get("host"), "count": row.get("count"), "cumulative": round(running / total_sources * 100)})
     pareto = "<ul class='deck-pareto'>" + "".join("<li><b>" + _esc(str(row.get("host") or "来源")) + "</b><i style='width:" + str(int(_as_number(row.get("cumulative")))) + "%'></i><span>累计 " + str(int(_as_number(row.get("cumulative")))) + "%</span></li>" for row in pareto_rows) + "</ul>"
-    cards.append(_deck_card(15, "pareto", "PARETO", "集中度：头部来源占了多少证据", pareto if pareto_rows else _deck_gap(gaps, "等待来源分布。"), state="observed" if pareto_rows else "gap"))
+    cards.append(card(15, "pareto", "PARETO", "集中度：头部来源占了多少证据", pareto if pareto_rows else _deck_gap(gaps, "等待来源分布。"), state="observed" if pareto_rows else "gap"))
     hub_nodes = (analysis.get("evidence_graph") or {}).get("nodes") or [{"label": row.get("name"), "count": row.get("count")} for row in topics]
-    cards.append(_deck_card(16, "evidence-hub", "EVIDENCE HUB", "证据枢纽：主题共现关系", _deck_hub(hub_nodes), state="inferred" if hub_nodes else "gap"))
+    cards.append(card(16, "evidence-hub", "EVIDENCE HUB", "证据枢纽：主题共现关系", _deck_hub(hub_nodes), state="inferred" if hub_nodes else "gap"))
     questions = analysis.get("open_questions") or []
     uncertainty = "<div class='deck-uncertainty'><b>证据综合 {0:.2f}</b><span>已关闭的只是证据缺口，不是未来的不确定性。</span><ul>".format(score) + "".join("<li>" + _esc(str(question)) + "</li>" for question in questions[:4]) + "</ul></div>"
-    cards.append(_deck_card(17, "uncertainty", "UNCERTAINTY", "泡沫问题：哪些结论还不能说", uncertainty, state="inferred"))
+    cards.append(card(17, "uncertainty", "UNCERTAINTY", "泡沫问题：哪些结论还不能说", uncertainty, state="inferred"))
     proxy = _deck_sparkline(timeline) if len(timeline) >= 2 else _deck_gap(gaps, "仅有单期数据；用跨期证据量和平均信号分作为研究代理，不绘制虚构的收入或资本开支曲线。")
-    cards.append(_deck_card(18, "adoption-cost-proxy", "TIME SERIES", "跨期代理：证据量与平均信号分", proxy, state="observed" if len(timeline) >= 2 else "gap"))
-    cards.append(_deck_card(19, "risk-quadrant", "FOUR RISKS", "四象限：证据、时效、因果与结论风险", _deck_risk_quadrant(risks), state="inferred" if risks else "gap"))
+    cards.append(card(18, "adoption-cost-proxy", "TIME SERIES", "跨期代理：证据量与平均信号分", proxy, state="observed" if len(timeline) >= 2 else "gap"))
+    cards.append(card(19, "risk-quadrant", "FOUR RISKS", "四象限：证据、时效、因果与结论风险", _deck_risk_quadrant(risks), state="inferred" if risks else "gap"))
     next_owner = " · ".join(str(gap.get("owner") or "对应 Agent") for gap in gaps[:2]) or "下一轮由 Scout / Checker / Analyst 继续补证"
     closing = "<div class='deck-closing'><p>" + _esc(title) + "</p><dl><dt>下一步</dt><dd>" + _esc(next_owner) + "</dd><dt>边界</dt><dd>研究与模拟用途，非投资建议；无真实券商连接。</dd></dl><span>本报告基于 " + str(len(citations)) + " 条可回溯引用生成</span></div>"
-    cards.append(_deck_card(20, "closing", "CLOSING", "结论不是终点，而是下一轮核验的起点", closing, state="inferred", featured=True))
+    cards.append(card(20, "closing", "CLOSING", "结论不是终点，而是下一轮核验的起点", closing, state="inferred", featured=True))
     return (
         "<section class='research-deck' aria-labelledby='research-deck-title'><header class='research-deck-title'>"
         "<div><span>OVERVIEW · 20 CARD RESEARCH DECK</span><h2 id='research-deck-title'>" + _esc(team_name) + " · 深度报告卡片组</h2>"
@@ -767,6 +862,7 @@ def _wrap(
     .research-deck-title {{ display:flex; align-items:flex-end; justify-content:space-between; gap:15px; padding:5px 5px 16px; border-bottom:1px solid #2c3440; }} .research-deck-title span {{ color:#e63946; font-size:.64rem; letter-spacing:.15em; font-weight:900; }} .research-deck-title h2 {{ margin:5px 0; color:#f8fafc; font-size:1.15rem; }} .research-deck-title p {{ max-width:630px; margin:0; color:#9eabbc; font-size:.75rem; }} .research-deck-title > b {{ flex:none; color:#f4a261; font-size:.68rem; white-space:nowrap; }}
     .research-deck-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; margin-top:13px; }} .research-card {{ position:relative; min-width:0; min-height:205px; overflow:hidden; padding:15px; border:1px solid #2a313c; border-radius:12px; background:linear-gradient(150deg,rgba(29,34,42,.98),rgba(16,19,24,.98)); box-shadow:inset 0 1px rgba(255,255,255,.025); }} .research-card::after {{ position:absolute; right:-33px; bottom:-35px; width:110px; height:110px; border:1px solid rgba(232,230,225,.07); border-radius:50%; content:""; }} .research-card-featured {{ grid-column:span 2; min-height:235px; background:linear-gradient(135deg,#14171d 8%,#0e1116 62%,#201518); }}
     .research-card-head {{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 0 11px; color:#8995a8; font-size:.61rem; letter-spacing:.12em; font-weight:850; }} .deck-state {{ padding:3px 6px; border-radius:99px; font-size:.56rem; letter-spacing:.04em; font-style:normal; }} .deck-state.observed {{ color:#79d7b2; background:rgba(82,183,136,.13); }} .deck-state.inferred {{ color:#ffd293; background:rgba(244,162,97,.13); }} .deck-state.pending {{ color:#d5b5ff; background:rgba(183,148,244,.13); }} .research-card h3 {{ position:relative; z-index:1; max-width:94%; margin:0 0 12px; color:#f3f1ec; font-size:1.02rem; letter-spacing:-.01em; line-height:1.2; }} .research-card h4 {{ margin:0; color:#f8fafc; font-size:.83rem; }} .research-card p {{ color:#aeb8c6; }} .deck-caption {{ margin:10px 0 0; color:#8995a8 !important; font-size:.67rem; }} .deck-empty {{ color:#8995a8; font-size:.78rem; }}
+    .card-conclusion {{ position:relative; z-index:1; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; margin:0 0 12px; padding:7px; border:1px solid #365063; border-radius:8px; background:linear-gradient(135deg,rgba(18,49,65,.9),rgba(20,27,37,.9)); }} .card-conclusion div {{ min-width:0; }} .card-conclusion span,.card-conclusion b {{ display:block; }} .card-conclusion span {{ color:#78d8ca; font-size:.55rem; font-weight:800; letter-spacing:.05em; }} .card-conclusion b {{ margin-top:2px; overflow:hidden; color:#f1f5f9; font-size:.62rem; font-weight:650; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }}
     .deck-cover-copy {{ display:flex; position:relative; z-index:1; flex-direction:column; justify-content:flex-end; min-height:150px; }} .deck-cover-copy p {{ max-width:850px; margin:0; color:#f8fafc; font-size:1.48rem; font-weight:820; line-height:1.2; }} .deck-cover-copy small {{ margin-top:12px; color:#b7c0cb; font-size:.75rem; }} .deck-cover-copy span {{ color:#e8a2a9; font-size:.65rem; }} .deck-cover-rule {{ width:78px; height:3px; margin:16px 0 13px; background:linear-gradient(90deg,#e63946,#f4a261); }}
     .deck-editor-note {{ position:relative; z-index:1; }} .deck-editor-note > b {{ color:#f4a261; font-size:.73rem; }} .deck-editor-note p {{ max-width:640px; margin:8px 0 13px; font-size:.8rem; line-height:1.55; }} .deck-editor-note dl {{ display:grid; grid-template-columns:82px 1fr; gap:6px 10px; margin:0; font-size:.69rem; }} .deck-editor-note dt {{ color:#e63946; font-weight:800; }} .deck-editor-note dd {{ margin:0; color:#c3cad4; }}
     .deck-contents {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0; padding:0; list-style:none; }} .deck-contents li {{ padding:9px; border:1px solid #313945; border-radius:8px; color:#c8d0db; font-size:.74rem; }} .deck-contents b {{ display:block; margin-bottom:3px; color:#e63946; font-size:1rem; font-family:Georgia,serif; }}
@@ -807,7 +903,8 @@ def _wrap(
     .hugohe3-doc .scenario-card {{ background:#121e2b; border-color:#304255; }} .hugohe3-doc .scenario-card p,.hugohe3-doc .scenario-card em {{ color:#a8bac8; }}
     @media (max-width:820px) {{ .analysis-columns {{ grid-template-columns:1fr; }} }}
     @media (max-width:700px) {{ .research-deck-title {{ display:block; }} .research-deck-title > b {{ display:block; margin-top:8px; }} .research-deck-grid {{ grid-template-columns:1fr; }} .research-card-featured {{ grid-column:auto; }} .deck-kpis {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }}
-    @media (max-width:600px) {{ .deck-cover {{ margin:-16px -16px 16px; }} .deck-section-grid,.scenario-grid,.overview-grid {{ grid-template-columns:1fr; }} .overview-card.overview-wide {{ grid-column:auto; }} .analysis-metrics {{ grid-template-columns:repeat(2,1fr); }} .research-deck {{ margin-right:-3px; margin-left:-3px; padding:11px; }} .research-card {{ min-height:0; padding:12px; }} .deck-cover-copy p {{ font-size:1.15rem; }} .deck-three {{ grid-template-columns:1fr; }} .deck-donut-wrap {{ align-items:flex-start; }} }}
+    @media (max-width:900px) {{ .card-conclusion {{ grid-template-columns:repeat(4,minmax(0,1fr)); }} }}
+    @media (max-width:600px) {{ .deck-cover {{ margin:-16px -16px 16px; }} .deck-section-grid,.scenario-grid,.overview-grid {{ grid-template-columns:1fr; }} .overview-card.overview-wide {{ grid-column:auto; }} .analysis-metrics {{ grid-template-columns:repeat(2,1fr); }} .research-deck {{ margin-right:-3px; margin-left:-3px; padding:11px; }} .research-card {{ min-height:0; padding:12px; }} .deck-cover-copy p {{ font-size:1.15rem; }} .deck-three {{ grid-template-columns:1fr; }} .deck-donut-wrap {{ align-items:flex-start; }} .card-conclusion {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }}
     @media (max-width:600px) {{ .hugohe3-doc {{ padding:16px; }} h1 {{ font-size:1.2rem; }} .seconds-strip {{ grid-template-columns:repeat(3,1fr); }} .signal-map-head {{ display:block; }} .legend {{ margin-top:6px; }} }}
   </style>
 </head>

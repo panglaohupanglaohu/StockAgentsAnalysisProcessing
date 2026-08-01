@@ -37,9 +37,12 @@ describe('Engine Live Cockpit (T801/T802/T832/T861)', () => {
     expect(html).toContain('max-width:none');
     expect(html).toContain('id="reports" class="report-index"');
     expect(html).toContain('report-flow');
+    expect(html).toContain('id="assembly-zoom-out"');
+    expect(html).toContain('id="assembly-zoom-fit"');
+    expect(html).toContain('.road-shell.is-empty');
     expect(
       readFileSync(path.join(process.cwd(), 'src/frontend/js/investment-engine.js'), 'utf8'),
-    ).toContain('renderPipelineFlow');
+    ).toContain('draftModules.length');
   });
 
   it('deriveStartState covers five run statuses', () => {

@@ -437,11 +437,16 @@
       if (empty) empty.style.display = 'block';
       box.innerHTML = '';
       if ($('assembly-count')) $('assembly-count').textContent = '0 个信息模块';
+      var emptyRoad = $('source-drop');
+      if (emptyRoad) emptyRoad.classList.add('is-empty');
       computeModuleBadges();
       syncPrimaryButton();
+      if (typeof fitAssemblyZoom === 'function') fitAssemblyZoom();
       return;
     }
     if (empty) empty.style.display = 'none';
+    var filledRoad = $('source-drop');
+    if (filledRoad) filledRoad.classList.remove('is-empty');
     box.innerHTML = draftModules
       .map(function (s, i) {
         var type =
@@ -480,6 +485,7 @@
     });
     computeModuleBadges();
     syncPrimaryButton();
+    if (typeof fitAssemblyZoom === 'function') fitAssemblyZoom();
   }
 
   function addModule(id, name, kind) {
@@ -569,6 +575,8 @@
     } catch (e) {
       lib.innerHTML = '<div class="empty">' + esc(e.message || e) + '</div>';
     }
+    // Re-fit after asynchronously loaded source parts change the road density.
+    window.setTimeout(fitAssemblyZoom, 0);
     // Soft badge: AI 60s docs — failure must not block Engine
     try {
       var docs = await api().request('/api/v1/information-documents?channel=ai_news_60s&limit=30');
@@ -846,6 +854,32 @@
   }
 
   document.querySelectorAll('.part-card').forEach(bindDrag);
+
+  var assemblyZoom = 1;
+  function setAssemblyZoom(value) {
+    assemblyZoom = Math.max(0.65, Math.min(1.35, Number(value) || 1));
+    var viewport = document.querySelector('.assembly-viewport');
+    var road = $('source-drop');
+    if (road) road.style.setProperty('--road-zoom', String(assemblyZoom));
+    var reset = $('assembly-zoom-reset');
+    if (reset) reset.textContent = Math.round(assemblyZoom * 100) + '%';
+    if (viewport) viewport.setAttribute('aria-label', '装配主干道缩放 ' + Math.round(assemblyZoom * 100) + '%');
+  }
+  function fitAssemblyZoom() {
+    var road = $('source-drop');
+    var track = $('road-modules-scroll');
+    if (!road || !track) return setAssemblyZoom(0.85);
+    var count = draftModules.length;
+    var hasOverflow = track.scrollWidth > track.clientWidth + 20;
+    var target = count === 0 ? 0.78 : count <= 2 ? 0.88 : count <= 5 ? 0.95 : 1;
+    setAssemblyZoom(hasOverflow ? Math.min(target, 0.82) : target);
+  }
+  if ($('assembly-zoom-out')) $('assembly-zoom-out').addEventListener('click', function () { setAssemblyZoom(assemblyZoom - 0.1); });
+  if ($('assembly-zoom-in')) $('assembly-zoom-in').addEventListener('click', function () { setAssemblyZoom(assemblyZoom + 0.1); });
+  if ($('assembly-zoom-reset')) $('assembly-zoom-reset').addEventListener('click', function () { setAssemblyZoom(1); });
+  if ($('assembly-zoom-fit')) $('assembly-zoom-fit').addEventListener('click', fitAssemblyZoom);
+  setAssemblyZoom(1);
+  window.setTimeout(fitAssemblyZoom, 0);
 
   var drop = $('source-drop');
   if (drop) {

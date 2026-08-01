@@ -136,6 +136,11 @@
     .assembly { border:1px solid #dbe5ee; border-radius:14px; padding:14px; background:linear-gradient(180deg,#f8fbff,#fff); margin-bottom:16px; min-width:0; max-width:100%; box-sizing:border-box; overflow:hidden; }
     .assembly-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
     .assembly-head h2 { margin:0; font-size:15px; } .assembly-head p { margin:4px 0 0; color:#64748b; font-size:11px; }
+    .assembly-tools { display:flex; align-items:center; gap:4px; flex:none; }
+    .assembly-tools button { min-width:28px; height:26px; padding:3px 7px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; color:#334155; cursor:pointer; font-size:11px; }
+    .assembly-tools button:hover { border-color:#0f766e; color:#0f766e; background:#f0fdfa; }
+    .assembly-viewport { min-width:0; max-width:100%; overflow:hidden; }
+    .assembly-viewport .road-shell { --road-zoom:1; zoom:var(--road-zoom); }
     .assembly-count { color:#0f766e; font-weight:800; font-size:11px; white-space:nowrap; }
     .parts-bank {
       display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; padding:4px 2px 12px;
@@ -160,6 +165,8 @@
       box-shadow:inset 0 0 0 4px rgba(255,255,255,.65); box-sizing:border-box;
     }
     .road-shell.over { border-color:#2563eb; background:#eff6ff; }
+    .road-shell.is-empty .road-track { min-height:64px; }
+    .road-shell.is-empty .road-empty { min-width:190px; }
     .road-track {
       flex:1 1 auto; min-width:0; min-height:86px; display:flex; align-items:center; gap:8px;
       overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:thin;
@@ -284,7 +291,7 @@
 
           <section class="card">
             <div class="assembly anchor-target" id="engine-assembly" tabindex="-1">
-              <div class="assembly-head"><div><h2>投资引擎装配台</h2><p>横向主干道是执行顺序；上方零件是信息源团队与证据入口，拖入后会成为本次模拟的上下文。</p></div><span class="assembly-count" id="assembly-count">0 个信息模块</span></div>
+              <div class="assembly-head"><div><h2>投资引擎装配台</h2><p>横向主干道是执行顺序；上方零件是信息源团队与证据入口，拖入后会成为本次模拟的上下文。</p></div><div class="assembly-tools" aria-label="装配台缩放"><button type="button" id="assembly-zoom-out" aria-label="缩小装配台">−</button><button type="button" id="assembly-zoom-reset">100%</button><button type="button" id="assembly-zoom-in" aria-label="放大装配台">＋</button><button type="button" id="assembly-zoom-fit">适配</button><span class="assembly-count" id="assembly-count">0 个信息模块</span></div></div>
               <div class="parts-bank" id="module-library" aria-label="可拖拽信息源团队">
                 <span class="part-title">可用零件</span>
                 <div class="part-card" draggable="true" data-id="team:ai_news_60s" data-name="60 秒 AI 信息团队" data-kind="team"><span class="part-type">AGENT TEAM</span><strong>60 秒 AI 信息团队</strong><small>AI 快讯、核验、产业映射</small></div>
@@ -292,7 +299,7 @@
               </div>
               <div class="engine-road" id="engine-context" tabindex="-1">
                 <div class="road-label"><span>信息到达 → Agent 推理 → 风险门禁 → 纸面成交</span><span class="scroll-hint" id="road-scroll-hint">左右滑动查看已装配模块</span></div>
-                <div class="road-shell drop-zone" id="source-drop" aria-label="投资引擎横向主干道">
+                <div class="assembly-viewport"><div class="road-shell drop-zone" id="source-drop" aria-label="投资引擎横向主干道">
                   <div class="road-core" data-road-core="ingress"><b>信息入口</b><small>Sources / Agents<br>as_of cutoff</small></div>
                   <span class="road-arrow" aria-hidden="true">→</span>
                   <div class="road-track" id="road-modules-scroll" tabindex="0" aria-label="已装配模块，可横向滚动">
@@ -303,7 +310,7 @@
                   <div class="road-core" data-road-core="research"><b>Research Graph</b><small>多空辩论<br>风险校验</small></div>
                   <span class="road-arrow" aria-hidden="true">→</span>
                   <div class="road-core" data-road-core="portfolio"><b>Paper Portfolio</b><small>模拟订单<br>不连接券商</small></div>
-                </div>
+                </div></div>
               </div>
               <p class="scroll-hint" id="parts-scroll-hint">零件过多时可在栏内横向滚动</p>
               <div class="parts-bank parts-bank-bottom" id="module-library-bottom" aria-label="可拖拽数据源零件，可横向滚动"><span class="part-title">数据与上下文零件</span><div class="part-card" draggable="true" data-id="document:latest" data-name="最新动态 HTML 文档" data-kind="document"><span class="part-type">DOCUMENT</span><strong>最新动态 HTML</strong><small>把已发布研究报告接入上下文</small></div><div class="part-card" draggable="true" data-id="market:event-clock" data-name="事件时钟" data-kind="market"><span class="part-type">ENGINE</span><strong>事件时钟</strong><small>按 as_of 截止时间排列信息</small></div><div id="source-library" style="display:contents"></div></div>

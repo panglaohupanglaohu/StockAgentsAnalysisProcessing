@@ -219,6 +219,16 @@ def test_ai60_quiet_run_renders_research_gaps_instead_of_dividing_by_zero():
     assert "data-card-id='closing'" in rendered
 
 
+def test_every_research_card_leads_with_conclusion_tuple():
+    from domain.information_sources.pipelines import build_ai60_report
+
+    report = validate_report("ai_news_60s", build_ai60_report([], "run-conclusion", "2026-08-01T00:00:00+00:00"))
+    rendered = hugohe3_render(report)
+    assert rendered.count("class='card-conclusion'") == 20
+    for label in ("时间", "地点", "对象", "事件", "结果", "影响", "行动"):
+        assert rendered.count(f">{label}</span>") == 20
+
+
 def test_ai60_bullets_extract_brief_not_html_body():
     from domain.information_sources.evidence import EvidenceRecord
     from domain.information_sources.pipelines import build_ai60_report

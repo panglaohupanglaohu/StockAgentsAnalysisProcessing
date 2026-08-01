@@ -32,6 +32,7 @@
     ]
   };
   var $ = function (id) { return document.getElementById(id); };
+  function setText(id, value) { var el = $(id); if (el) el.textContent = value; }
   var client = function () { return window.api; };
   var esc = function (v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
   var request = function (path, opts) { return client().request(path, opts || {}); };
@@ -326,7 +327,7 @@
 
   function trace(status, result) {
     var steps = result && result.steps ? result.steps : [];
-    var traceRoot = $('queue-trace'); traceRoot.innerHTML = steps.map(function (step, i) { return '<div class="trace-step"><span class="num">' + (i + 1) + '</span><div><b>' + esc(step.step || 'agent step') + '</b><small>' + esc(JSON.stringify(step)) + '</small></div><span class="status-pill">' + (step.ok === false ? '需复核' : '完成') + '</span></div>'; }).join('') || '<div class="trace-step"><span class="num">•</span><div><b>' + esc(status) + '</b><small>等待 Agent 返回步骤</small></div><span class="status-pill">运行中</span></div>';
+    var traceRoot = $('queue-trace'); if (!traceRoot) return; traceRoot.innerHTML = steps.map(function (step, i) { return '<div class="trace-step"><span class="num">' + (i + 1) + '</span><div><b>' + esc(step.step || 'agent step') + '</b><small>' + esc(JSON.stringify(step)) + '</small></div><span class="status-pill">' + (step.ok === false ? '需复核' : '完成') + '</span></div>'; }).join('') || '<div class="trace-step"><span class="num">•</span><div><b>' + esc(status) + '</b><small>等待 Agent 返回步骤</small></div><span class="status-pill">运行中</span></div>';
   }
 
   async function pollInformationRun(runId, teamId, onEvent) {
@@ -358,7 +359,7 @@
       if (run.status === 'failed' || run.status === 'cancelled') {
         throw new Error(run.error || ('run ' + run.status));
       }
-      $(teamMeta[teamId].note).textContent = ' 后台 ' + (run.status || 'queued') + '…';
+      setText(teamMeta[teamId].note, ' 后台 ' + (run.status || 'queued') + '…');
       await new Promise(function (r) { setTimeout(r, 500); });
     }
     throw new Error('运行超时：后台仍在执行，可稍后刷新查看文档');
@@ -366,7 +367,7 @@
 
   async function runTeam(teamId) {
     switchTab(teamId === 'ai_news_60s' ? 'ai60' : 'world');
-    $('queue-log').textContent = '启动 ' + teamId + '…';
+    setText('inspector-log', '启动 ' + teamId + '…');
     trace('running');
     var meta = teamMeta[teamId];
     if (teamState[teamId].running) return;
@@ -386,11 +387,11 @@
       if (!accepted) throw new Error((client()._lastError && client()._lastError.message) || 'enqueue failed');
       var result = accepted;
       if (accepted.async || accepted.accepted || accepted.status === 'queued') {
-        $('queue-log').textContent = '已入队 run_id=' + (accepted.run_id || '—') + '，后台执行中…';
+        setText('inspector-log', '已入队 run_id=' + (accepted.run_id || '—') + '，后台执行中…');
         result = await pollInformationRun(accepted.run_id, teamId);
       }
       stopLiveProgress(teamId);
-      $('queue-log').textContent = JSON.stringify(result, null, 2);
+      setText('inspector-log', JSON.stringify(result, null, 2));
       $('inspector-log').textContent = teamId + ' · ' + new Date().toLocaleString() + '\n' + JSON.stringify(result, null, 2);
       trace('completed', result);
       await animateTeamProgress(teamId, result);
@@ -400,9 +401,8 @@
       stopLiveProgress(teamId);
       teamState[teamId].running = false;
       setAgentProgress(teamId, 0, 'idle');
-      $(meta.note).textContent = ' failed / retry';
-      $('queue-log').textContent = 'ERROR ' + (e.message || e);
-      $('inspector-log').textContent = $('queue-log').textContent;
+      setText(meta.note, ' failed / retry');
+      setText('inspector-log', 'ERROR ' + (e.message || e));
     } finally {
       $(meta.start).disabled = false;
     }
