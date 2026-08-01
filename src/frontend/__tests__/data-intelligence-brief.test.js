@@ -32,4 +32,12 @@ describe('Data Intelligence conclusion brief (P13)', () => {
     // Prefer server contract over client-only rewrite
     expect(js).toContain('doc.executive_summary');
   });
+
+  it('shows which skills and tools own each delivery box', () => {
+    expect(js).toContain('box-capabilities');
+    expect(js).toContain('agent.skills');
+    expect(js).toContain('agent.tools');
+    expect(js).toContain('技能：');
+    expect(js).toContain('工具：');
+  });
 });

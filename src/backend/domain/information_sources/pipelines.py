@@ -61,6 +61,20 @@ def _evidence_claim_text(rec: EvidenceRecord, *, max_chars: int = 120) -> str:
     return "来源条目缺少可读标题或摘要（仅有链接，无法形成判断）"
 
 
+def _world_primary(records: List[EvidenceRecord]) -> Optional[EvidenceRecord]:
+    """Choose the first readable event for the world-trends cover.
+
+    RSS directories often contain URL-only rows before the actual article
+    entries.  Those rows remain citations, but must not become the report
+    title or the subject of the lead conclusion.
+    """
+    for record in records:
+        text = _evidence_claim_text(record)
+        if text and not text.startswith("来源条目缺少可读标题"):
+            return record
+    return records[0] if records else None
+
+
 def _url_only_text(value: str) -> bool:
     """Return True when a feed accidentally supplies a URL as its headline."""
     text = str(value or "").strip()
@@ -760,9 +774,9 @@ def build_dufu_report(records: List[EvidenceRecord], run_id: str, cutoff: str) -
         }
     ]
     analysis = _world_analysis(records, cutoff)
-    primary = records[0] if records else None
+    primary = _world_primary(records)
     what = _claim(
-        _evidence_claim_text(primary) if primary else "宏观议题待观察",
+        _evidence_claim_text(primary) if primary else "本轮世界趋势待观察",
         ClaimLabel.FACT.value,
         "取决于后续官方声明",
         cites,

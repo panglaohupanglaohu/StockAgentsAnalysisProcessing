@@ -188,9 +188,10 @@ def _analysis_overview(report: AiNews60sReport) -> str:
         for row in timeline
     ) or "<li class='overview-empty'>暂无可对齐的发布时间。</li>"
     signal_html = "".join(
-        f"<li><div class='overview-row'><b>{_esc(str(row.get('title') or '未命名信号'))}</b>"
-        f"<span>{float(row.get('score') or 0):.0f}</span></div>"
-        f"<div class='overview-track signal'><i style='width:{max(5, int(100 * (float(row.get('score') or 0) / signal_max)))}%'></i></div></li>"
+        f"<li><details class='overview-expand'><summary><div class='overview-row'><b>{_esc(str(row.get('title') or '未命名信号'))}</b>"
+        f"<span>{float(row.get('score') or 0):.0f}</span></div></summary>"
+        f"<p class='overview-detail'>{_esc(str(row.get('title') or '未命名信号'))}</p>"
+        f"<div class='overview-track signal'><i style='width:{max(5, int(100 * (float(row.get('score') or 0) / signal_max)))}%'></i></div></details></li>"
         for row in signals[:5]
     ) or "<li class='overview-empty'>等待高分信号。</li>"
     impact_html = "".join(
@@ -322,7 +323,7 @@ def _deck_card(
         conclusion_html = (
             "<section class='card-conclusion' aria-label='本卡结论摘要'>"
             + "".join(
-                f"<div><span>{_esc(label)}</span><b>{_esc(str(conclusion.get(key) or '待核验'))}</b></div>"
+                f"<details class='card-conclusion-cell'><summary><span>{_esc(label)}</span><b>{_esc(str(conclusion.get(key) or '待核验'))}</b></summary><p>{_esc(str(conclusion.get(key) or '待核验'))}</p></details>"
                 for key, label in (("time", "时间"), ("place", "地点"), ("object", "对象"),
                                     ("event", "事件"), ("result", "结果"), ("impact", "影响"),
                                     ("action", "行动"))
@@ -366,7 +367,7 @@ def _card_conclusion(
     actions = {
         "cover": "先读核心结论，再查看证据卡",
         "editor-note": "按重点结论继续核验",
-        "contents": "选择卡片查看对应证据",
+        "executive-summary": "优先核验这些核心结论",
         "signal-landscape": "关注证据强度与覆盖边界",
         "evidence-pulse": "补充低覆盖来源",
         "two-state-gap": "同时追踪信号与反证",
@@ -453,6 +454,16 @@ def _deck_donut(rows: List[Dict[str, Any]], *, value_key: str = "count") -> str:
         + "".join(legend)
         + "</ul></div>"
     )
+
+
+def _confidence_explanation(score: float) -> str:
+    if score >= 0.8:
+        return "高可信：多来源、时效与交叉证据均较完整"
+    if score >= 0.6:
+        return "中高可信：已有交叉证据，但仍需补充一手来源"
+    if score >= 0.4:
+        return "中等可信：方向性信号成立，细节与因果仍需核验"
+    return "低可信：仅能作为线索，不能据此形成事实判断"
 
 
 def _deck_sparkline(series: List[Dict[str, Any]]) -> str:
@@ -583,6 +594,41 @@ def _deck_analysis(report: Union[AiNews60sReport, WorldIntelReport]) -> Dict[str
     return analysis
 
 
+def _world_display_title(report: WorldIntelReport) -> str:
+    """Recover a useful cover title from citations for older URL-first runs."""
+    current = str(report.what_happened.text or "").strip()
+    if current and not current.startswith("来源条目缺少可读标题"):
+        return current
+    for citation in report.citations:
+        title = str(getattr(citation, "title", "") or "").strip()
+        if title and not title.startswith("http") and title.lower() != "fallback":
+            return title
+    return "本轮世界趋势待观察"
+
+
+def _ai_display_title(report: AiNews60sReport, analysis: Optional[Dict[str, Any]] = None) -> str:
+    """Use the strongest observed event as the AI deck cover headline.
+
+    The thematic report headline describes the method/run; the cover must tell
+    a reader what actually happened in this collection round. Prefer the
+    scored, readable signal and fall back to a citation title or the thematic
+    headline when the round has no usable event title.
+    """
+    data = analysis or _deck_analysis(report)
+    candidates: List[str] = []
+    for row in data.get("top_signals") or []:
+        candidates.append(str(row.get("title") or "").strip())
+    for citation in report.citations:
+        candidates.append(str(getattr(citation, "title", "") or "").strip())
+    candidates.append(str(report.headline or "").strip())
+    for candidate in candidates:
+        parsed = urlparse(candidate)
+        is_url_only = parsed.scheme in {"http", "https"} and bool(parsed.netloc) and not any(ch.isspace() for ch in candidate)
+        if candidate and not is_url_only and candidate not in {"暂无高分信号", "未命名证据", "fallback"}:
+            return candidate
+    return "等待本轮研究结论"
+
+
 def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *, team_name: str) -> str:
     """Render all 20 overview card grammars as a static research deck.
 
@@ -604,7 +650,7 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
     diversity = int(analysis.get("source_diversity") or 0)
     score = _as_number(analysis.get("evidence_score"))
     freshness = _as_number(analysis.get("freshness_ratio"))
-    title = report.headline if isinstance(report, AiNews60sReport) else report.what_happened.text
+    title = _ai_display_title(report, analysis) if isinstance(report, AiNews60sReport) else _world_display_title(report)
     title = str(title or "等待本轮研究结论")
     subtitle = f"{team_name} · {evidence_count} 条证据 · {diversity} 个来源域名 · 截止 {report.data_cutoff}"
     topic_max = max([_as_number(row.get("count")) for row in topics] or [1]) or 1
@@ -626,18 +672,27 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
     cards.append(card(1, "cover", "COVER", "本轮信号档案", "<div class='deck-cover-copy'><p>" + _esc(title) + "</p><small>" + _esc(subtitle) + "</small><div class='deck-cover-rule'></div><span>研究 / 模拟用途 · 非投资建议 · 无真实券商连接</span></div>", featured=True))
     # The first cards are conclusions, not documentation about the method.  The
     # reader should see what this run found immediately after the cover.
-    conf_label = "强" if score >= 0.72 else "中" if score >= 0.45 else "弱"
+    conf_label = "高" if score >= 0.8 else "中高" if score >= 0.6 else "中" if score >= 0.4 else "低"
+    confidence_note = _confidence_explanation(score)
+    evidence_mix = (
+        "<div class='deck-evidence-mix'><article><h4>证据类别分布</h4>"
+        + _deck_donut(topics)
+        + "</article><article><h4>来源域分布</h4>"
+        + _deck_donut(sources)
+        + "</article></div>"
+    )
     exec_kpis = (
         "<div class='deck-kpis deck-exec-kpis'>"
         f"<div><span>结论</span><b>{_esc(title[:48])}</b><small>headline</small></div>"
-        f"<div><span>置信</span><b>{_esc(conf_label)}</b><small>综合 {score:.2f}</small></div>"
-        f"<div><span>证据</span><b>{evidence_count}</b><small>as_of {_esc(str(report.data_cutoff)[:16])}</small></div>"
-        f"<div><span>来源域</span><b>{diversity}</b><small>可追溯引用 {len(citations)}</small></div>"
+        f"<div><span>置信</span><b>{_esc(conf_label)}</b><small>综合 {score:.2f} · {_esc(confidence_note)}</small></div>"
+        f"<div><span>证据</span><b>{evidence_count}</b><small>按主题类别分布 · as_of {_esc(str(report.data_cutoff)[:16])}</small></div>"
+        f"<div><span>来源域</span><b>{diversity}</b><small>三块来源域分布</small></div>"
         "</div>"
     )
     if isinstance(report, AiNews60sReport):
         conclusion = (
             exec_kpis
+            + evidence_mix
             + _claim_block(report.bullets[:4], "本轮关键发现")
             + _claim_block(report.why_it_matters[:3], "为什么重要")
             + "<details class='deck-method'><summary>方法与口径（折叠）</summary>"
@@ -645,9 +700,11 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
         )
         impact = _claim_block(report.risks_and_counterpoints[:3], "反证与限制") + "<p class='deck-card-meta'>影响映射：" + _esc("、".join(report.related_companies[:4]) or "暂无可确认产业节点") + "</p>"
     else:
+        world_claims = [report.what_happened] + list(report.timeline[:2]) + list(report.market_transmission[:1])
         conclusion = (
             exec_kpis
-            + _claim_block([report.what_happened], "事件结论")
+            + evidence_mix
+            + _claim_block(world_claims, "本轮多条结论")
             + _claim_block(report.drivers[:3], "关键驱动")
             + "<details class='deck-method'><summary>方法与口径（折叠）</summary>"
             "<p>事件卡、时间线与情景树均绑定本轮证据；情景为分析框架非预测保证。</p></details>"
@@ -667,13 +724,11 @@ def _research_overview_deck(report: Union[AiNews60sReport, WorldIntelReport], *,
         ("risk-quadrant", "inferred" if risks else "gap", "风险矩阵"),
         ("closing", "inferred", "下一步与边界"),
     ]
-    toc_html = "<nav class='deck-toc' aria-label='报告目录'><ul>" + "".join(
-        f"<li data-status='{_deck_state(st)[0]}'><a href='#{_esc(cid)}'><b>{_esc(label)}</b>"
-        f"<em class='deck-state {_deck_state(st)[0]}'>{_esc(_deck_state(st)[1])}</em>"
-        f"<span>{_esc(label)} · 点击直达</span></a></li>"
-        for cid, st, label in toc_specs
-    ) + "</ul></nav>" + impact
-    cards.append(card(3, "contents", "CONTENTS", "目录 · 真实摘要与状态", toc_html, state="observed" if evidence_count else "gap"))
+    summary_html = _claim_block(
+        (report.bullets[:5] if isinstance(report, AiNews60sReport) else ([report.what_happened] + list(report.drivers[:2]) + list(report.market_transmission[:2]))),
+        "本轮核心结论",
+    ) + impact
+    cards.append(card(3, "executive-summary", "EXECUTIVE SUMMARY", "结论摘要 · 先看发生了什么", summary_html, state="observed" if evidence_count else "gap"))
     kpis = "<div class='deck-kpis'><div><span>证据</span><b>" + str(evidence_count) + "</b><small>已标准化条目</small></div><div><span>来源</span><b>" + str(diversity) + "</b><small>独立域名</small></div><div><span>综合</span><b>" + f"{score:.2f}" + "</b><small>覆盖/时效评分</small></div><div><span>时效</span><b>" + f"{freshness:.0%}" + "</b><small>7 日内证据</small></div></div>"
     cards.append(card(4, "signal-landscape", "LANDSCAPE", "证据版图：本轮四个控制面", kpis))
     cards.append(card(5, "evidence-pulse", "EVIDENCE PULSE", "来源热度与信号脉冲", _deck_bar_list(sources, label_key="host", value_key="count", suffix=" 条")))
@@ -772,7 +827,7 @@ def render_world(report: WorldIntelReport) -> str:
   <header class='deck-cover'>
     <div class='slide-kicker'>WORLD INTEL · EDITORIAL BOARD</div>
     <p class="kicker">世界趋势 · 数据截止 <time datetime="{_esc(report.data_cutoff)}">{_esc(report.data_cutoff)}</time></p>
-    <h1>{_esc(report.what_happened.text)}</h1>
+    <h1>{_esc(_world_display_title(report))}</h1>
     <p class="disclaimer" role="note">{_esc(report.disclaimer)}</p>
   </header>
   {_research_overview_deck(report, team_name="独夫之心 · 世界趋势研判")}
@@ -839,7 +894,7 @@ def _wrap(
     @keyframes analysis-pulse {{ 0%,100% {{ opacity:.45; transform:translateY(0); }} 50% {{ opacity:1; transform:translateY(-2px); }} }}
     .analysis-progress-wrap {{ margin:13px 0 2px; }} .analysis-progress-label {{ display:flex; justify-content:space-between; gap:8px; color:#64748b; font-size:.68rem; }} .analysis-progress-label b {{ color:#0f766e; font-size:.74rem; }} .analysis-progress-track {{ height:7px; margin-top:5px; overflow:hidden; border-radius:99px; background:#dcecef; box-shadow:inset 0 1px 2px rgba(15,118,110,.08); }} .analysis-progress-track i {{ display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#0f766e,#38bdf8,#6366f1); transition:width .5s ease; }}
     .analysis-metrics {{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:13px 0; }} .analysis-metric {{ padding:9px; border:1px solid #d5e8ef; border-radius:9px; background:#fff; }} .analysis-metric span,.analysis-metric strong {{ display:block; }} .analysis-metric span {{ color:#64748b; font-size:.68rem; }} .analysis-metric strong {{ margin-top:3px; color:#0f766e; font-size:1.1rem; }}
-    .analysis-overview {{ margin:11px 0 9px; padding:11px; border:1px solid #d8e7ed; border-radius:10px; background:rgba(255,255,255,.62); }} .overview-heading {{ display:flex; justify-content:space-between; align-items:flex-end; gap:8px; margin-bottom:8px; }} .overview-heading h3 {{ margin:.2rem 0 0; color:#334155; font-size:.86rem; }} .overview-count {{ color:#64748b; font-size:.67rem; white-space:nowrap; }} .overview-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }} .overview-card {{ min-width:0; padding:9px; border:1px solid #e1edf1; border-radius:8px; background:#fff; }} .overview-card.overview-wide {{ grid-column:1 / -1; }} .overview-card h4 {{ margin:0 0 6px; color:#475569; font-size:.73rem; }} .overview-card ul {{ list-style:none; margin:0; padding:0; }} .overview-card li {{ min-width:0; padding:4px 0; border-bottom:1px solid #f0f4f6; }} .overview-row {{ display:flex; justify-content:space-between; align-items:baseline; gap:7px; min-width:0; font-size:.68rem; }} .overview-row b {{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; font-weight:700; }} .overview-row span {{ color:#64748b; font-size:.64rem; white-space:nowrap; }} .overview-track {{ height:4px; margin-top:4px; overflow:hidden; border-radius:99px; background:#e7f1f4; }} .overview-track i {{ display:block; height:100%; min-width:4px; border-radius:inherit; background:linear-gradient(90deg,#0f766e,#60a5fa); }} .overview-track.score i {{ background:linear-gradient(90deg,#f59e0b,#ef4444); }} .overview-track.timeline i {{ background:linear-gradient(90deg,#6366f1,#38bdf8); }} .overview-track.signal i {{ background:linear-gradient(90deg,#10b981,#0f766e); }} .overview-tag {{ padding:1px 5px; border-radius:4px; background:#ecfeff; color:#0e7490 !important; font-size:.58rem !important; }} .overview-detail {{ margin:4px 0 0; color:#64748b; font-size:.64rem; line-height:1.4; }} .overview-stage {{ display:flex; align-items:center; gap:6px; }} .overview-stage b {{ flex:1; color:#334155; font-size:.67rem; }} .overview-stage span:last-child {{ color:#0f766e; font-size:.6rem; }} .overview-stage-dot {{ width:7px; height:7px; flex:none; border-radius:50%; background:#cbd5e1; }} .overview-stage-dot.done {{ background:#10b981; box-shadow:0 0 0 3px #d1fae5; }} .question-mark {{ display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; margin-right:5px; border-radius:50%; background:#fff7ed; color:#c2410c; font-weight:800; font-size:.62rem; }} .overview-empty {{ color:#94a3b8; font-size:.68rem; }}
+    .analysis-overview {{ margin:11px 0 9px; padding:11px; border:1px solid #d8e7ed; border-radius:10px; background:rgba(255,255,255,.62); }} .overview-heading {{ display:flex; justify-content:space-between; align-items:flex-end; gap:8px; margin-bottom:8px; }} .overview-heading h3 {{ margin:.2rem 0 0; color:#334155; font-size:.86rem; }} .overview-count {{ color:#64748b; font-size:.67rem; white-space:nowrap; }} .overview-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }} .overview-card {{ min-width:0; padding:9px; border:1px solid #e1edf1; border-radius:8px; background:#fff; }} .overview-card.overview-wide {{ grid-column:1 / -1; }} .overview-card h4 {{ margin:0 0 6px; color:#475569; font-size:.73rem; }} .overview-card ul {{ list-style:none; margin:0; padding:0; }} .overview-card li {{ min-width:0; padding:4px 0; border-bottom:1px solid #f0f4f6; }} .overview-row {{ display:flex; justify-content:space-between; align-items:baseline; gap:7px; min-width:0; font-size:.68rem; }} .overview-row b {{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; font-weight:700; }} .overview-row span {{ color:#64748b; font-size:.64rem; white-space:nowrap; }} .overview-track {{ height:4px; margin-top:4px; overflow:hidden; border-radius:99px; background:#e7f1f4; }} .overview-track i {{ display:block; height:100%; min-width:4px; border-radius:inherit; background:linear-gradient(90deg,#0f766e,#60a5fa); }} .overview-track.score i {{ background:linear-gradient(90deg,#f59e0b,#ef4444); }} .overview-track.timeline i {{ background:linear-gradient(90deg,#6366f1,#38bdf8); }} .overview-track.signal i {{ background:linear-gradient(90deg,#10b981,#0f766e); }} .overview-tag {{ padding:1px 5px; border-radius:4px; background:#ecfeff; color:#0e7490 !important; font-size:.58rem !important; }} .overview-detail {{ margin:4px 0 0; color:#64748b; font-size:.64rem; line-height:1.4; }} .overview-expand summary {{ cursor:zoom-in; list-style:none; }} .overview-expand summary::-webkit-details-marker {{ display:none; }} .overview-expand[open] summary {{ cursor:zoom-out; }} .overview-expand[open] .overview-row b {{ overflow:visible; text-overflow:clip; white-space:normal; }} .overview-stage {{ display:flex; align-items:center; gap:6px; }} .overview-stage b {{ flex:1; color:#334155; font-size:.67rem; }} .overview-stage span:last-child {{ color:#0f766e; font-size:.6rem; }} .overview-stage-dot {{ width:7px; height:7px; flex:none; border-radius:50%; background:#cbd5e1; }} .overview-stage-dot.done {{ background:#10b981; box-shadow:0 0 0 3px #d1fae5; }} .question-mark {{ display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; margin-right:5px; border-radius:50%; background:#fff7ed; color:#c2410c; font-weight:800; font-size:.62rem; }} .overview-empty {{ color:#94a3b8; font-size:.68rem; }}
     .analysis-columns {{ display:grid; grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr); gap:9px; align-items:stretch; }} .analysis-columns > * {{ min-width:0; }} .analysis-panel {{ min-width:0; padding:11px; border:1px solid #d8e7ed; border-radius:10px; background:rgba(255,255,255,.8); overflow:hidden; }} .analysis-panel h3 {{ margin:0 0 8px; font-size:.83rem; color:#334155; }} .topic-list,.reasoning-list,.impact-panel ul {{ list-style:none; padding:0; margin:0; }} .topic-list li {{ min-width:0; padding:6px 0; border-bottom:1px solid #edf3f5; }} .topic-line {{ display:flex; justify-content:space-between; gap:8px; min-width:0; font-size:.76rem; }} .topic-line b,.topic-line span {{ min-width:0; overflow-wrap:anywhere; }} .topic-line span,.topic-list small {{ color:#64748b; font-size:.68rem; }} .topic-list small {{ display:block; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }} .topic-track {{ height:5px; background:#e7f1f4; border-radius:9px; overflow:hidden; margin-top:4px; }} .topic-track i {{ display:block; height:100%; min-width:4px; border-radius:9px; background:linear-gradient(90deg,#0f766e,#60a5fa); }}
     .reasoning-step {{ display:flex; align-items:flex-start; gap:7px; min-width:0; padding:6px 0; border-bottom:1px solid #edf3f5; }} .step-dot {{ width:8px; height:8px; margin-top:4px; border-radius:50%; background:#0f766e; box-shadow:0 0 0 3px #d5f5ee; flex:none; }} .reasoning-step div {{ flex:1; min-width:0; overflow-wrap:anywhere; }} .reasoning-step b,.reasoning-step small {{ display:block; }} .reasoning-step b {{ font-size:.75rem; }} .reasoning-step small {{ color:#64748b; font-size:.68rem; line-height:1.4; margin-top:2px; }} .reasoning-step em {{ color:#0f766e; font-style:normal; font-size:.63rem; white-space:nowrap; }} .impact-panel {{ margin-top:9px; }} .impact-panel li {{ padding:6px 0; border-bottom:1px solid #edf3f5; font-size:.76rem; line-height:1.5; overflow-wrap:anywhere; }}
     .seconds-strip {{ display:grid; grid-template-columns:repeat(6,1fr); gap:5px; margin:1rem 0 1.2rem; }}
@@ -862,11 +917,12 @@ def _wrap(
     .research-deck-title {{ display:flex; align-items:flex-end; justify-content:space-between; gap:15px; padding:5px 5px 16px; border-bottom:1px solid #2c3440; }} .research-deck-title span {{ color:#e63946; font-size:.64rem; letter-spacing:.15em; font-weight:900; }} .research-deck-title h2 {{ margin:5px 0; color:#f8fafc; font-size:1.15rem; }} .research-deck-title p {{ max-width:630px; margin:0; color:#9eabbc; font-size:.75rem; }} .research-deck-title > b {{ flex:none; color:#f4a261; font-size:.68rem; white-space:nowrap; }}
     .research-deck-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; margin-top:13px; }} .research-card {{ position:relative; min-width:0; min-height:205px; overflow:hidden; padding:15px; border:1px solid #2a313c; border-radius:12px; background:linear-gradient(150deg,rgba(29,34,42,.98),rgba(16,19,24,.98)); box-shadow:inset 0 1px rgba(255,255,255,.025); }} .research-card::after {{ position:absolute; right:-33px; bottom:-35px; width:110px; height:110px; border:1px solid rgba(232,230,225,.07); border-radius:50%; content:""; }} .research-card-featured {{ grid-column:span 2; min-height:235px; background:linear-gradient(135deg,#14171d 8%,#0e1116 62%,#201518); }}
     .research-card-head {{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 0 11px; color:#8995a8; font-size:.61rem; letter-spacing:.12em; font-weight:850; }} .deck-state {{ padding:3px 6px; border-radius:99px; font-size:.56rem; letter-spacing:.04em; font-style:normal; }} .deck-state.observed {{ color:#79d7b2; background:rgba(82,183,136,.13); }} .deck-state.inferred {{ color:#ffd293; background:rgba(244,162,97,.13); }} .deck-state.pending {{ color:#d5b5ff; background:rgba(183,148,244,.13); }} .research-card h3 {{ position:relative; z-index:1; max-width:94%; margin:0 0 12px; color:#f3f1ec; font-size:1.02rem; letter-spacing:-.01em; line-height:1.2; }} .research-card h4 {{ margin:0; color:#f8fafc; font-size:.83rem; }} .research-card p {{ color:#aeb8c6; }} .deck-caption {{ margin:10px 0 0; color:#8995a8 !important; font-size:.67rem; }} .deck-empty {{ color:#8995a8; font-size:.78rem; }}
-    .card-conclusion {{ position:relative; z-index:1; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; margin:0 0 12px; padding:7px; border:1px solid #365063; border-radius:8px; background:linear-gradient(135deg,rgba(18,49,65,.9),rgba(20,27,37,.9)); }} .card-conclusion div {{ min-width:0; }} .card-conclusion span,.card-conclusion b {{ display:block; }} .card-conclusion span {{ color:#78d8ca; font-size:.55rem; font-weight:800; letter-spacing:.05em; }} .card-conclusion b {{ margin-top:2px; overflow:hidden; color:#f1f5f9; font-size:.62rem; font-weight:650; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }}
+    .card-conclusion {{ position:relative; z-index:1; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; margin:0 0 12px; padding:7px; border:1px solid #365063; border-radius:8px; background:linear-gradient(135deg,rgba(18,49,65,.9),rgba(20,27,37,.9)); }} .card-conclusion-cell {{ min-width:0; cursor:zoom-in; }} .card-conclusion-cell summary {{ list-style:none; }} .card-conclusion-cell summary::-webkit-details-marker {{ display:none; }} .card-conclusion-cell summary:focus-visible {{ outline:2px solid #78d8ca; outline-offset:2px; }} .card-conclusion span,.card-conclusion b {{ display:block; }} .card-conclusion span {{ color:#78d8ca; font-size:.55rem; font-weight:800; letter-spacing:.05em; }} .card-conclusion b {{ margin-top:2px; overflow:hidden; color:#f1f5f9; font-size:.62rem; font-weight:650; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }} .card-conclusion-cell p {{ display:none; margin:4px 0 0; color:#f1f5f9; font-size:.63rem; line-height:1.35; overflow-wrap:anywhere; }} .card-conclusion-cell[open] {{ grid-column:span 2; padding:4px; border-radius:5px; background:rgba(120,216,202,.08); cursor:zoom-out; }} .card-conclusion-cell[open] b {{ overflow:visible; text-overflow:clip; white-space:normal; overflow-wrap:anywhere; }} .card-conclusion-cell[open] p {{ display:block; }}
     .deck-cover-copy {{ display:flex; position:relative; z-index:1; flex-direction:column; justify-content:flex-end; min-height:150px; }} .deck-cover-copy p {{ max-width:850px; margin:0; color:#f8fafc; font-size:1.48rem; font-weight:820; line-height:1.2; }} .deck-cover-copy small {{ margin-top:12px; color:#b7c0cb; font-size:.75rem; }} .deck-cover-copy span {{ color:#e8a2a9; font-size:.65rem; }} .deck-cover-rule {{ width:78px; height:3px; margin:16px 0 13px; background:linear-gradient(90deg,#e63946,#f4a261); }}
     .deck-editor-note {{ position:relative; z-index:1; }} .deck-editor-note > b {{ color:#f4a261; font-size:.73rem; }} .deck-editor-note p {{ max-width:640px; margin:8px 0 13px; font-size:.8rem; line-height:1.55; }} .deck-editor-note dl {{ display:grid; grid-template-columns:82px 1fr; gap:6px 10px; margin:0; font-size:.69rem; }} .deck-editor-note dt {{ color:#e63946; font-weight:800; }} .deck-editor-note dd {{ margin:0; color:#c3cad4; }}
     .deck-contents {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0; padding:0; list-style:none; }} .deck-contents li {{ padding:9px; border:1px solid #313945; border-radius:8px; color:#c8d0db; font-size:.74rem; }} .deck-contents b {{ display:block; margin-bottom:3px; color:#e63946; font-size:1rem; font-family:Georgia,serif; }}
     .deck-kpis {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }} .deck-kpis div {{ min-width:0; padding:10px; border:1px solid #303945; border-top:2px solid #e63946; border-radius:8px; background:rgba(255,255,255,.025); }} .deck-kpis div:nth-child(2) {{ border-top-color:#f4a261; }} .deck-kpis div:nth-child(3) {{ border-top-color:#5ea8ff; }} .deck-kpis div:nth-child(4) {{ border-top-color:#52b788; }} .deck-kpis span,.deck-kpis small,.deck-kpis b {{ display:block; }} .deck-kpis span,.deck-kpis small {{ color:#8995a8; font-size:.62rem; }} .deck-kpis b {{ margin:4px 0; color:#f8fafc; font-size:1.3rem; }}
+    .deck-exec-kpis small {{ line-height:1.35; }} .deck-evidence-mix {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:10px 0 12px; }} .deck-evidence-mix article {{ min-width:0; padding:8px; border:1px solid #303945; border-radius:8px; background:rgba(255,255,255,.02); }} .deck-evidence-mix h4 {{ margin:0 0 5px; color:#cbd5e1; font-size:.68rem; }} .deck-evidence-mix .deck-donut-wrap {{ gap:9px; }} .deck-evidence-mix .deck-donut {{ width:82px; height:82px; }} .deck-evidence-mix .deck-donut::before {{ width:52px; height:52px; }} .deck-evidence-mix .deck-legend li {{ font-size:.58rem; }}
     .deck-bars,.deck-pareto {{ margin:0; padding:0; list-style:none; }} .deck-bars li,.deck-pareto li {{ padding:6px 0; border-bottom:1px solid #27303a; }} .deck-bars li > div {{ display:flex; justify-content:space-between; gap:8px; color:#d7dde6; font-size:.71rem; }} .deck-bars li > div b {{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }} .deck-bars li > div span {{ color:#f4a261; white-space:nowrap; }} .deck-bars li > i,.deck-pareto li > i {{ display:block; height:5px; margin-top:5px; border-radius:99px; background:linear-gradient(90deg,#e63946,#f4a261 52%,#5ea8ff); }}
     .deck-dumbbell {{ display:grid; grid-template-columns:1fr 70px 1fr; align-items:center; gap:8px; padding-top:14px; }} .deck-dumbbell div {{ padding:11px; border:1px solid #333d49; border-radius:9px; background:rgba(255,255,255,.03); text-align:center; }} .deck-dumbbell span,.deck-dumbbell b {{ display:block; }} .deck-dumbbell span {{ color:#93a0b0; font-size:.63rem; }} .deck-dumbbell b {{ color:#fff; font-size:1.5rem; }} .deck-dumbbell i {{ height:2px; background:linear-gradient(90deg,#52b788,#f4a261); }} .deck-dumbbell p {{ grid-column:1/-1; margin:3px 0 0; font-size:.66rem; }}
     .deck-bubbles {{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:7px; min-height:128px; }} .deck-bubble {{ display:flex; width:var(--size); height:var(--size); flex-direction:column; align-items:center; justify-content:center; padding:4px; border-radius:50%; color:#fff; text-align:center; }} .deck-bubble b {{ max-width:92%; overflow:hidden; font-size:.63rem; line-height:1.1; text-overflow:ellipsis; }} .deck-bubble small {{ margin-top:3px; font-size:.58rem; }} .deck-bubble.b0 {{ background:radial-gradient(circle at 33% 28%,#ff717a,#a91e2d); }} .deck-bubble.b1 {{ background:radial-gradient(circle at 33% 28%,#ffc17c,#a85320); }} .deck-bubble.b2 {{ background:radial-gradient(circle at 33% 28%,#88dfad,#247852); }} .deck-bubble.b3 {{ background:radial-gradient(circle at 33% 28%,#8fc5ff,#285fa1); }} .deck-bubble.b4 {{ background:radial-gradient(circle at 33% 28%,#d4b7ff,#7954a9); }}

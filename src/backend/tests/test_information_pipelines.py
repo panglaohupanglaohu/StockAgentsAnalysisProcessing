@@ -54,7 +54,7 @@ async def test_ai60_pipeline_fixture_produces_versioned_html(tmp_stores):
     for card_id in (
         "cover",
         "editor-note",
-        "contents",
+        "executive-summary",
         "signal-landscape",
         "evidence-pulse",
         "two-state-gap",
@@ -304,6 +304,21 @@ def test_ai60_question_title_cannot_be_top_signal():
     top = report.analysis.get("top_signals") or []
     assert top and top[0]["title"] != question.title
     assert all("有没有" not in item["title"] for item in top)
+
+
+def test_world_cover_skips_url_only_row_when_selecting_event_title():
+    from domain.information_sources.evidence import EvidenceRecord
+    from domain.information_sources.pipelines import build_dufu_report
+
+    def rec(eid, title, content):
+        return EvidenceRecord(evidence_id=eid, source_id="rss", run_id="run-world-title", url=f"https://example.com/{eid}", title=title, content=content, summary=content, content_hash=eid * 64, fetched_at="2026-08-01T05:00:00+00:00")
+
+    report = build_dufu_report([
+        rec("url", "https://example.com/thread", ""),
+        rec("event", "马斯克对特斯拉剥离的表态影响能源与航运成本", "马斯克与特斯拉的公开表态引发成本传导讨论。"),
+    ], "run-world-title", "2026-08-01T05:00:00+00:00")
+    assert "马斯克" in report["what_happened"]["text"]
+    assert "来源条目缺少可读标题" not in report["what_happened"]["text"]
 
 
 @pytest.mark.asyncio

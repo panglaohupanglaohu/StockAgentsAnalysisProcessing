@@ -6,11 +6,13 @@
   var teamMeta = {
     ai_news_60s: {
       row: 'ai60-agent-row', grid: 'ai60-box-grid', note: 'ai60-run-note', start: 'btn-start-ai60',
-      boxes: [['主题与信号', '把原始信息聚类成 AI 主题，并计算可解释的信号强度。'], ['证据综合', 'Scout/Checker 合并重复来源，核对日期、实体、数字和引用。'], ['判断路径', '从观察 → 聚类 → 核验，说明为什么这组信息值得关注。'], ['业务影响', 'Market Mapper 推演能力、成本、采用到收入/利润池的路径。'], ['反证与开放问题', '保留来源偏差、样本不足、时间滞后和替代解释。'], ['动态研判驾驶舱', 'Publisher 将主题、指标、路径、关系图和 HTML 版本发布。']]
+      boxes: [['主题与信号', '把原始信息聚类成 AI 主题，并计算可解释的信号强度。'], ['证据综合', 'Scout/Checker 合并重复来源，核对日期、实体、数字和引用。'], ['判断路径', '从观察 → 聚类 → 核验，说明为什么这组信息值得关注。'], ['业务影响', 'Market Mapper 推演能力、成本、采用到收入/利润池的路径。'], ['反证与开放问题', '保留来源偏差、样本不足、时间滞后和替代解释。'], ['动态研判驾驶舱', 'Publisher 将主题、指标、路径、关系图和 HTML 版本发布。']],
+      boxAgents: [0, 2, 0, 3, 2, 5]
     },
     dufu_world_intel: {
       row: 'dufu-agent-row', grid: 'dufu-slide-grid', note: 'dufu-run-note', start: 'btn-start-dufu',
-      boxes: [['事件事实', '建立事件卡：发生了什么、何时发生、谁发布。'], ['历史时间线', '把关键节点按时间排列，避免把相关性写成因果。'], ['关键驱动', '提取政策、资本、技术与地缘变量。'], ['数据趋势', '清洗数据、对齐口径并识别趋势与异常。'], ['观点与反证', 'Red Team 提供替代解释和证据缺口。'], ['三情景树', '乐观 / 基准 / 悲观，附触发条件与观察指标。'], ['市场传导', '事件 → 行业 → 公司 → 资产的路径，仅供模拟。'], ['来源与截止', '记录来源、发布时间、抓取时间和版本号。']]
+      boxes: [['事件事实', '建立事件卡：发生了什么、何时发生、谁发布。'], ['历史时间线', '把关键节点按时间排列，避免把相关性写成因果。'], ['关键驱动', '提取政策、资本、技术与地缘变量。'], ['数据趋势', '清洗数据、对齐口径并识别趋势与异常。'], ['观点与反证', 'Red Team 提供替代解释和证据缺口。'], ['三情景树', '乐观 / 基准 / 悲观，附触发条件与观察指标。'], ['市场传导', '事件 → 行业 → 公司 → 资产的路径，仅供模拟。'], ['来源与截止', '记录来源、发布时间、抓取时间和版本号。']],
+      boxAgents: [0, 1, 2, 2, 4, 5, 5, 6]
     }
   };
   var liveScripts = {
@@ -81,15 +83,21 @@
   }
   function renderInfoBoxes(teamId, values) {
     var meta = teamMeta[teamId], root = $(meta.grid); if (!root) return;
+    var agents = teamState[teamId].agents || [];
     root.innerHTML = meta.boxes.map(function (item, index) {
       var value = values && values[index] ? values[index] : item[1];
-      return '<article class="info-box" data-box-index="' + index + '"><h4>' + esc(item[0]) + '</h4><span class="box-agent">等待 Agent 接管</span><p>' + esc(value) + '</p><div class="box-progress" aria-hidden="true"><i></i></div><div class="box-meta"><span class="box-status">待命</span><span class="box-elapsed">交付盒</span></div></article>';
+      var agent = agents[(meta.boxAgents || [])[index] == null ? index : meta.boxAgents[index]] || {};
+      var skills = Array.isArray(agent.skills) ? agent.skills : [];
+      var tools = Array.isArray(agent.tools) ? agent.tools : [];
+      var capability = (skills.length ? '技能：' + skills.slice(0, 3).join('、') : '技能待配置') + ' · ' + (tools.length ? '工具：' + tools.slice(0, 3).join('、') : '工具待配置');
+      return '<article class="info-box" data-box-index="' + index + '"><h4>' + esc(item[0]) + '</h4><span class="box-agent">' + esc(agent.name || '等待 Agent 接管') + '</span><span class="box-capabilities" title="' + esc(capability) + '">' + esc(capability) + '</span><p>' + esc(value) + '</p><div class="box-progress" aria-hidden="true"><i></i></div><div class="box-meta"><span class="box-status">待命</span><span class="box-elapsed">交付盒</span></div></article>';
     }).join('');
   }
   function setAgentProgress(teamId, stepIndex, state) {
     var info = teamState[teamId], agents = info.agents || [], meta = teamMeta[teamId];
     agents.forEach(function (agent, index) { agent.uiState = index < stepIndex ? 'done' : index === stepIndex ? state : 'idle'; });
     renderAgentRow(teamId);
+    renderInfoBoxes(teamId);
     var boxes = $(meta.grid) ? $(meta.grid).querySelectorAll('.info-box') : [];
     Array.prototype.forEach.call(boxes, function (box, index) {
       box.classList.toggle('filling', state === 'running' && index === stepIndex);
@@ -142,7 +150,7 @@
       var data = await request('/api/v1/agent-config/teams/' + encodeURIComponent(teamId));
       var agents = data && data.agents ? data.agents : [];
       if (!Array.isArray(agents)) agents = Object.keys(agents).map(function (key) { return agents[key]; });
-      teamState[teamId].agents = agents.map(function (agent) { return { agent_id: agent.agent_id, name: agent.name, role: agent.role, uiState: 'idle' }; });
+      teamState[teamId].agents = agents.map(function (agent) { return { agent_id: agent.agent_id, name: agent.name, role: agent.role, skills: agent.skills || [], tools: agent.tools || [], uiState: 'idle' }; });
     } catch (e) { teamState[teamId].agents = []; }
     renderAgentRow(teamId);
   }

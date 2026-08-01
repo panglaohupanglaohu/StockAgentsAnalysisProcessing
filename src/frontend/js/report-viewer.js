@@ -6,7 +6,7 @@
     dufu_world_intel: { label: '独夫之心 · 世界趋势阅读', lede: '把事件、时间线、驱动因素、情景与反证编排成可回看的世界趋势故事板。' }
   };
   var CARDS = [
-    ['cover', '封面 / 本轮论点'], ['editor-note', '本轮核心判断'], ['contents', '影响、传导与反证'], ['signal-landscape', '主题景观'],
+    ['cover', '封面 / 本轮论点'], ['editor-note', '本轮核心判断'], ['executive-summary', '结论摘要'], ['signal-landscape', '主题景观'],
     ['evidence-pulse', '证据脉冲'], ['two-state-gap', '比较信号'], ['confidence-bubble', '置信度气泡'], ['evidence-donut', '来源构成'],
     ['top-three', 'Top-3 比较'], ['source-ranking', '来源排名'], ['dual-track', '双轨比较'], ['second-tier', '长尾多样性'],
     ['focal-signal', '焦点信号'], ['flow-map', '事件到业务路径'], ['pareto', '集中度 Pareto'], ['evidence-hub', '证据关系 Hub'],

@@ -16,7 +16,7 @@ describe('Report output content (P14)', () => {
     const ids = [
       'cover',
       'editor-note',
-      'contents',
+      'executive-summary',
       'signal-landscape',
       'evidence-pulse',
       'two-state-gap',
@@ -48,10 +48,10 @@ describe('Report output content (P14)', () => {
     expect(hugo).toMatch(/非投资建议/);
   });
 
-  it('contents card includes status TOC anchors', () => {
-    expect(hugo).toContain('deck-toc');
-    expect(hugo).toContain("href='#{_esc(cid)}'");
-    expect(hugo).toContain('CONTENTS');
+  it('summary card contains conclusions rather than a duplicate menu', () => {
+    expect(hugo).toContain('executive-summary');
+    expect(hugo).toContain('结论摘要 · 先看发生了什么');
+    expect(hugo).not.toContain('目录 · 真实摘要与状态');
   });
 
   it('numeric cards read analysis fields not hard-coded demo markets', () => {

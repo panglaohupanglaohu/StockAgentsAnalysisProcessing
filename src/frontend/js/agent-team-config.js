@@ -71,6 +71,12 @@ async function deleteSelectedTeams(){
 
 // bulk-delete checkbox template uses data-name=
 const A='/api/v1/agent-config',AT='/api/v1/agent-teams';
+const BUILTIN_TEAMS=[
+  {team_id:'build_system',name:'Build System',description:'AI-native build and development team'},
+  {team_id:'ai_coding',name:'AI 编程团队',description:'软件开发与测试团队'},
+  {team_id:'ai_news_60s',name:'60 秒 AI 信息团队',description:'AI 信息采集、核验与动态报告'},
+  {team_id:'dufu_world_intel',name:'独夫之心世界趋势团队',description:'世界趋势采集、分析与故事板'}
+];
 let tid='',aid='',atab='ag-status',wzD={},wzS=1;
 let _offline=false;
 let _teamsListCache=null;
@@ -218,16 +224,19 @@ function escapeHtml(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'
 
 // ── Teams ──
 async function loadTeams(){
-  const d=await getTeamsList(true);const s=el('team-select');
+  let d=await getTeamsList(true);const s=el('team-select');
   if(!d||!d.length){
     const err=api._lastError;
     const hint=err?(err.status?`HTTP ${err.status}`:'网络错误')+(err.message?`: ${err.message}`:''):'无数据';
-    s.innerHTML=`<option>无团队（${escapeHtml(hint)}）</option>`;
+    // Keep the team switcher usable during backend reloads. Selecting a
+    // fallback team still lets the page retry its detail API once the server
+    // is back, instead of rendering an apparently empty workspace.
+    d=BUILTIN_TEAMS;
+    s.innerHTML=d.map(t=>`<option value="${escapeHtml(t.team_id)}">${escapeHtml(t.name)}</option>`).join('');
     if(err&&err.status>=500){
       toast(`加载团队失败 ${hint} — 后端可能正在重启，点「重试」`,'error');
       showOfflineBanner();
     }
-    return;
   }
   // 深链 team_id（物竞反馈台 → 关系 tab）
   try{
@@ -400,7 +409,7 @@ async function loadOverview(){
 }
 
 // ── System Evolution (自我演进) ──
-const EVP='/api/v1/agent-teams/evolution';
+// EVP base path is declared once at module top (shared with pagination warmup).
 const EVO_ITEMS_PAGE_SIZE=50;
 let evoVisibleCount=EVO_ITEMS_PAGE_SIZE;
 let evoCachedItems=[];
